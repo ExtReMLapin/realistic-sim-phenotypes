@@ -1,0 +1,1501 @@
+{
+  "_readme": [
+    "Population profiles for rsim. Figures come from the research report 'Pigmentation and body size in Western countries'.",
+    "Status of each block: [S] sourced, [I] computed or interpolated from sources, [D] design choice (free to adjust).",
+    "Percentages do not need to sum to 100: they are normalised on load.",
+    "Hair categories: red, blond, light_brown (dark blond / light brown), dark_brown, black.",
+    "Eye categories: blue (blue/grey), inter (green/hazel/intermediate), brown."
+  ],
+  "settings": {
+    "official_only": true,
+    "skin_sd_default": 5.0,
+    "skin_val_shift": 0.0,
+    "neutral_silhouette": 3.5,
+    "minority_boost_under_30": 1.6,
+    "child_blond_boost": 2.0,
+    "teen_blond_boost": 1.4,
+    "redhead_skin_shift": 3.0,
+    "excluded_tones": [
+      459182,
+      459183,
+      146066,
+      459181
+    ],
+    "_excluded_tones": "[D] yellow, orange and bright red swatches: not plausible human skin (checked on tones_sheet.png)",
+    "_status": "[D]",
+    "_debug_log": "Write a [step] marker before each generation step, to locate EA's freeze bug",
+    "debug_log": true
+  },
+  "hair_tags": {
+    "red": [
+      "HairColor_Red",
+      "HairColor_Auburn",
+      "HairColor_Orange"
+    ],
+    "blond": [
+      "HairColor_Blonde",
+      "HairColor_DirtyBlond"
+    ],
+    "light_brown": [
+      "HairColor_Brown"
+    ],
+    "dark_brown": [
+      "HairColor_DarkBrown"
+    ],
+    "black": [
+      "HairColor_Black"
+    ],
+    "_status": "[D] category -> official game tags. DirtyBlond counted as blond: it reads as blond on screen (checked in game 2026-10-05)."
+  },
+  "eye_tags": {
+    "blue": [
+      "EyeColor_Blue",
+      "EyeColor_LightBlue",
+      "EyeColor_Gray"
+    ],
+    "inter": [
+      "EyeColor_Green",
+      "EyeColor_LightGreen",
+      "EyeColor_Hazel",
+      "EyeColor_HazelGreen",
+      "EyeColor_HazelBlue"
+    ],
+    "brown": [
+      "EyeColor_Brown",
+      "EyeColor_DarkBrown",
+      "EyeColor_LightBrown",
+      "EyeColor_Honey",
+      "EyeColor_Amber"
+    ],
+    "_status": "[D]"
+  },
+  "european_eyes_given_hair": {
+    "blond": [
+      78.7,
+      15.1,
+      6.1
+    ],
+    "red": [
+      70.7,
+      17.1,
+      12.2
+    ],
+    "light_brown": [
+      49.8,
+      22.7,
+      27.5
+    ],
+    "dark_brown": [
+      49.8,
+      22.7,
+      27.5
+    ],
+    "black": [
+      35.6,
+      18.3,
+      46.1
+    ],
+    "_status": "[S] Netherlands NTR 2004 (Lin et al. 2016); black row: Bolk 1908. Refitted by IPF to each country's eye frequencies [D].",
+    "_order": [
+      "blue",
+      "inter",
+      "brown"
+    ]
+  },
+  "groups": {
+    "mena": {
+      "skin_L": [
+        70,
+        6
+      ],
+      "hair": {
+        "red": 2,
+        "blond": 5,
+        "light_brown": 13,
+        "dark_brown": 50,
+        "black": 30
+      },
+      "eyes": {
+        "blue": 8,
+        "inter": 22,
+        "brown": 70
+      },
+      "_source": "[S] Turkey n=149 (PMC9690125), softened for the Maghreb for lack of data [D]"
+    },
+    "ssa": {
+      "skin_L": [
+        30,
+        8
+      ],
+      "hair": {
+        "dark_brown": 3,
+        "black": 97
+      },
+      "eyes": {
+        "inter": 1,
+        "brown": 99
+      },
+      "_source": "[S] skin spread (Crawford 2017, African Americans); hair and eyes [D]"
+    },
+    "east_asian": {
+      "skin_L": [
+        82,
+        4
+      ],
+      "hair": {
+        "dark_brown": 5,
+        "black": 95
+      },
+      "eyes": {
+        "inter": 1,
+        "brown": 99
+      },
+      "_source": "[D] no categorical data"
+    },
+    "south_asian": {
+      "skin_L": [
+        52,
+        7
+      ],
+      "hair": {
+        "light_brown": 2,
+        "dark_brown": 13,
+        "black": 85
+      },
+      "eyes": {
+        "blue": 1,
+        "inter": 4,
+        "brown": 95
+      },
+      "_source": "[S] Malakand Pashtuns n=893 for eyes, diaspora set to 95% brown [D]"
+    },
+    "se_asian": {
+      "skin_L": [
+        72,
+        6
+      ],
+      "hair": {
+        "dark_brown": 8,
+        "black": 92
+      },
+      "eyes": {
+        "inter": 1,
+        "brown": 99
+      },
+      "_source": "[D]"
+    },
+    "latin": {
+      "skin_L": [
+        64,
+        8
+      ],
+      "hair": {
+        "red": 0.6,
+        "blond": 5.4,
+        "light_brown": 14,
+        "dark_brown": 50,
+        "black": 30
+      },
+      "eyes": {
+        "blue": 5,
+        "inter": 10,
+        "brown": 85
+      },
+      "_source": "[S] CANDELA (Adhikari 2019, n=6,236): dark hair ~80%, red 0.6%, light eyes ~10-15%"
+    },
+    "_status": "Skin: mean and SD of the CAS swatch lightness L*, calibrated by eye on tones_sheet.png on 2026-10-05 [D]: >=79 white, 73-78 light, 63-72 light brown, 45-62 medium brown, <45 dark."
+  },
+  "profiles": {
+    "france": {
+      "label": "France",
+      "origins": {
+        "european": 85,
+        "mena": 9,
+        "ssa": 5,
+        "east_asian": 0.5,
+        "south_asian": 0.4,
+        "se_asian": 0.7,
+        "latin": 0.3,
+        "mixed": 3,
+        "_source": "[I] INSEE 2023 + TeO2, middle of the ranges"
+      },
+      "european": {
+        "skin_L": [
+          82,
+          4
+        ],
+        "hair": {
+          "red": 2,
+          "blond": 9,
+          "light_brown": 30,
+          "dark_brown": 47,
+          "black": 12
+        },
+        "eyes_M": {
+          "blue": 33,
+          "inter": 22,
+          "brown": 45
+        },
+        "eyes_F": {
+          "blue": 27,
+          "inter": 27,
+          "brown": 46
+        },
+        "_source": "[D] interpolated between the Netherlands and Spain, no French data"
+      },
+      "bmi": {
+        "F": {
+          "YOUNGADULT": [
+            9.2,
+            64.5,
+            18.4,
+            5.3,
+            1.7,
+            0.9
+          ],
+          "ADULT": [
+            3.8,
+            59.8,
+            23.4,
+            8.5,
+            3.0,
+            1.4
+          ],
+          "ELDER": [
+            2.7,
+            52.2,
+            29.4,
+            11.6,
+            3.1,
+            1.0
+          ]
+        },
+        "M": {
+          "YOUNGADULT": [
+            7.2,
+            71.8,
+            16.1,
+            3.5,
+            1.0,
+            0.4
+          ],
+          "ADULT": [
+            0.9,
+            49.2,
+            37.2,
+            10.0,
+            1.9,
+            0.8
+          ],
+          "ELDER": [
+            0.4,
+            32.0,
+            48.4,
+            15.9,
+            2.8,
+            0.5
+          ]
+        },
+        "_source": "[S] NCD-RisC 2024; classes <18.5 / 18.5-25 / 25-30 / 30-35 / 35-40 / >=40"
+      },
+      "youth": {
+        "CHILD_F": [
+          18.8,
+          4.6,
+          2.5
+        ],
+        "CHILD_M": [
+          16.6,
+          5.3,
+          5.5
+        ],
+        "TEEN_F": [
+          16.2,
+          3.8,
+          2.5
+        ],
+        "TEEN_M": [
+          15.0,
+          3.8,
+          5.5
+        ],
+        "_source": "[S] NCD-RisC 2024 children (overweight, obesity, thinness)"
+      },
+      "muscle": {
+        "p": 0.161,
+        "_source": "[S] EHIS 2019, muscle strengthening >= 2 days/week"
+      }
+    },
+    "uk": {
+      "label": "United Kingdom",
+      "origins": {
+        "european": 81.5,
+        "mena": 1.2,
+        "ssa": 4.0,
+        "east_asian": 1.0,
+        "south_asian": 7.5,
+        "se_asian": 0.5,
+        "latin": 0.3,
+        "mixed": 2.9,
+        "_source": "[S] ONS 2021 (England + Wales)"
+      },
+      "european": {
+        "skin_L": [
+          85,
+          4
+        ],
+        "hair": {
+          "red": 4.6,
+          "blond": 11.5,
+          "light_brown": 41.1,
+          "dark_brown": 37.2,
+          "black": 4.2
+        },
+        "eyes_M": {
+          "blue": 58,
+          "inter": 14,
+          "brown": 28
+        },
+        "eyes_F": {
+          "blue": 50,
+          "inter": 20,
+          "brown": 30
+        },
+        "_source": "[S] hair from UK Biobank (Morgan 2018); eyes [D]"
+      },
+      "bmi": {
+        "F": {
+          "YOUNGADULT": [
+            4.9,
+            51.9,
+            23.9,
+            9.8,
+            5.2,
+            4.3
+          ],
+          "ADULT": [
+            1.0,
+            35.0,
+            31.2,
+            17.4,
+            8.5,
+            6.9
+          ],
+          "ELDER": [
+            1.2,
+            28.1,
+            34.7,
+            21.0,
+            9.8,
+            5.2
+          ]
+        },
+        "M": {
+          "YOUNGADULT": [
+            5.8,
+            53.0,
+            27.9,
+            8.2,
+            3.0,
+            2.1
+          ],
+          "ADULT": [
+            0.7,
+            24.2,
+            43.4,
+            21.7,
+            6.5,
+            3.5
+          ],
+          "ELDER": [
+            0.5,
+            18.8,
+            45.5,
+            24.6,
+            7.9,
+            2.8
+          ]
+        },
+        "_source": "[S] NCD-RisC 2024; classes <18.5 / 18.5-25 / 25-30 / 30-35 / 35-40 / >=40"
+      },
+      "youth": {
+        "CHILD_F": [
+          29.7,
+          9.9,
+          1.3
+        ],
+        "CHILD_M": [
+          29.8,
+          13.0,
+          3.0
+        ],
+        "TEEN_F": [
+          31.1,
+          10.2,
+          1.3
+        ],
+        "TEEN_M": [
+          28.0,
+          12.1,
+          3.0
+        ],
+        "_source": "[S] NCD-RisC 2024 children (overweight, obesity, thinness)"
+      },
+      "muscle": {
+        "p": 0.197,
+        "_source": "[D] EU average for lack of data"
+      }
+    },
+    "usa": {
+      "label": "United States",
+      "origins": {
+        "european": 58,
+        "mena": 1,
+        "ssa": 12.5,
+        "east_asian": 2,
+        "south_asian": 1.8,
+        "se_asian": 2,
+        "latin": 19,
+        "mixed": 4,
+        "_source": "[S]/[I] Census 2020"
+      },
+      "european": {
+        "skin_L": [
+          84,
+          4
+        ],
+        "hair": {
+          "red": 4,
+          "blond": 12,
+          "light_brown": 40,
+          "dark_brown": 38,
+          "black": 6
+        },
+        "eyes_M": {
+          "blue": 48,
+          "inter": 22,
+          "brown": 30
+        },
+        "eyes_F": {
+          "blue": 40,
+          "inter": 28,
+          "brown": 32
+        },
+        "_source": "[D] modelled on the UK and Australia (Han 2008)"
+      },
+      "bmi": {
+        "F": {
+          "YOUNGADULT": [
+            5.3,
+            35.9,
+            24.9,
+            13.8,
+            9.5,
+            10.7
+          ],
+          "ADULT": [
+            1.3,
+            24.3,
+            27.7,
+            19.3,
+            13.2,
+            14.2
+          ],
+          "ELDER": [
+            1.4,
+            21.6,
+            30.6,
+            23.1,
+            13.3,
+            10.0
+          ]
+        },
+        "M": {
+          "YOUNGADULT": [
+            3.8,
+            40.0,
+            26.7,
+            16.9,
+            7.5,
+            5.0
+          ],
+          "ADULT": [
+            0.7,
+            19.2,
+            35.2,
+            27.4,
+            10.7,
+            6.7
+          ],
+          "ELDER": [
+            0.6,
+            17.5,
+            37.8,
+            28.0,
+            11.5,
+            4.5
+          ]
+        },
+        "_source": "[S] NCD-RisC 2024; classes <18.5 / 18.5-25 / 25-30 / 30-35 / 35-40 / >=40"
+      },
+      "youth": {
+        "CHILD_F": [
+          38.5,
+          17.8,
+          1.2
+        ],
+        "CHILD_M": [
+          38.0,
+          21.5,
+          2.3
+        ],
+        "TEEN_F": [
+          43.5,
+          21.3,
+          1.2
+        ],
+        "TEEN_M": [
+          42.6,
+          24.3,
+          2.3
+        ],
+        "_source": "[S] NCD-RisC 2024 children (overweight, obesity, thinness)"
+      },
+      "muscle": {
+        "p": 0.197,
+        "_source": "[D] EU average for lack of data"
+      }
+    },
+    "germany": {
+      "label": "Germany",
+      "origins": {
+        "european": 89.5,
+        "mena": 7,
+        "ssa": 0.8,
+        "east_asian": 0.3,
+        "south_asian": 0.7,
+        "se_asian": 0.4,
+        "latin": 0.4,
+        "mixed": 1,
+        "_source": "[I] Mikrozensus 2024"
+      },
+      "european": {
+        "skin_L": [
+          84,
+          4
+        ],
+        "hair": {
+          "red": 2.5,
+          "blond": 16,
+          "light_brown": 48,
+          "dark_brown": 30,
+          "black": 3.5
+        },
+        "eyes_M": {
+          "blue": 58,
+          "inter": 14,
+          "brown": 28
+        },
+        "eyes_F": {
+          "blue": 50,
+          "inter": 20,
+          "brown": 30
+        },
+        "_source": "[D] anchored on northern Germany (n=152) and the Netherlands"
+      },
+      "bmi": {
+        "F": {
+          "YOUNGADULT": [
+            6.3,
+            64.2,
+            18.8,
+            6.9,
+            2.8,
+            0.8
+          ],
+          "ADULT": [
+            1.5,
+            51.0,
+            26.9,
+            12.2,
+            5.3,
+            3.1
+          ],
+          "ELDER": [
+            0.6,
+            31.3,
+            34.6,
+            21.5,
+            8.5,
+            3.4
+          ]
+        },
+        "M": {
+          "YOUNGADULT": [
+            2.9,
+            59.3,
+            27.3,
+            7.9,
+            1.6,
+            0.9
+          ],
+          "ADULT": [
+            0.3,
+            27.1,
+            45.8,
+            21.0,
+            4.0,
+            1.9
+          ],
+          "ELDER": [
+            0.1,
+            16.0,
+            49.3,
+            26.1,
+            6.5,
+            2.0
+          ]
+        },
+        "_source": "[S] NCD-RisC 2024; classes <18.5 / 18.5-25 / 25-30 / 30-35 / 35-40 / >=40"
+      },
+      "youth": {
+        "CHILD_F": [
+          20.4,
+          6.1,
+          1.7
+        ],
+        "CHILD_M": [
+          26.3,
+          11.8,
+          2.8
+        ],
+        "TEEN_F": [
+          23.1,
+          7.2,
+          1.7
+        ],
+        "TEEN_M": [
+          28.7,
+          12.3,
+          2.8
+        ],
+        "_source": "[S] NCD-RisC 2024 children (overweight, obesity, thinness)"
+      },
+      "muscle": {
+        "p": 0.369,
+        "_source": "[S] EHIS 2019, muscle strengthening >= 2 days/week"
+      }
+    },
+    "spain": {
+      "label": "Spain",
+      "origins": {
+        "european": 87,
+        "mena": 2.8,
+        "ssa": 0.8,
+        "east_asian": 0.5,
+        "south_asian": 0.4,
+        "se_asian": 0.2,
+        "latin": 7.5,
+        "mixed": 1,
+        "_source": "[I] INE 2025"
+      },
+      "european": {
+        "skin_L": [
+          80,
+          4
+        ],
+        "hair": {
+          "red": 0.3,
+          "blond": 9.7,
+          "light_brown": 20,
+          "dark_brown": 44.5,
+          "black": 25.5
+        },
+        "eyes_M": {
+          "blue": 10,
+          "inter": 21,
+          "brown": 69
+        },
+        "eyes_F": {
+          "blue": 8,
+          "inter": 24,
+          "brown": 68
+        },
+        "_source": "[S] Ambroa-Conde 2024 (n=380/378); 'brown' split between light and dark brown [D]"
+      },
+      "bmi": {
+        "F": {
+          "YOUNGADULT": [
+            7.8,
+            65.4,
+            21.0,
+            3.4,
+            1.2,
+            1.1
+          ],
+          "ADULT": [
+            1.5,
+            55.6,
+            29.7,
+            7.8,
+            3.2,
+            2.1
+          ],
+          "ELDER": [
+            0.6,
+            28.2,
+            41.4,
+            20.0,
+            6.8,
+            3.0
+          ]
+        },
+        "M": {
+          "YOUNGADULT": [
+            2.8,
+            63.1,
+            27.1,
+            4.1,
+            2.1,
+            0.8
+          ],
+          "ADULT": [
+            0.4,
+            29.5,
+            47.9,
+            17.0,
+            4.0,
+            1.2
+          ],
+          "ELDER": [
+            0.4,
+            21.8,
+            49.5,
+            24.2,
+            3.5,
+            0.6
+          ]
+        },
+        "_source": "[S] NCD-RisC 2024; classes <18.5 / 18.5-25 / 25-30 / 30-35 / 35-40 / >=40"
+      },
+      "youth": {
+        "CHILD_F": [
+          35.5,
+          13.9,
+          1.3
+        ],
+        "CHILD_M": [
+          37.6,
+          17.4,
+          3.2
+        ],
+        "TEEN_F": [
+          26.9,
+          7.8,
+          1.3
+        ],
+        "TEEN_M": [
+          30.9,
+          11.6,
+          3.2
+        ],
+        "_source": "[S] NCD-RisC 2024 children (overweight, obesity, thinness)"
+      },
+      "muscle": {
+        "p": 0.18,
+        "_source": "[S] EHIS 2019, muscle strengthening >= 2 days/week"
+      }
+    },
+    "italy": {
+      "label": "Italy",
+      "origins": {
+        "european": 92.5,
+        "mena": 1.8,
+        "ssa": 0.9,
+        "east_asian": 0.6,
+        "south_asian": 1.2,
+        "se_asian": 0.3,
+        "latin": 0.8,
+        "mixed": 0.5,
+        "_source": "[I] ISTAT 2025"
+      },
+      "european": {
+        "skin_L": [
+          80,
+          4
+        ],
+        "hair": {
+          "red": 1,
+          "blond": 6,
+          "light_brown": 22,
+          "dark_brown": 51,
+          "black": 20
+        },
+        "eyes_M": {
+          "blue": 18,
+          "inter": 22,
+          "brown": 60
+        },
+        "eyes_F": {
+          "blue": 14,
+          "inter": 25,
+          "brown": 61
+        },
+        "_source": "[D] no categorical data"
+      },
+      "bmi": {
+        "F": {
+          "YOUNGADULT": [
+            8.6,
+            68.2,
+            18.4,
+            3.7,
+            0.8,
+            0.3
+          ],
+          "ADULT": [
+            2.5,
+            58.1,
+            24.9,
+            10.1,
+            3.1,
+            1.3
+          ],
+          "ELDER": [
+            1.1,
+            32.7,
+            36.6,
+            21.2,
+            6.7,
+            1.8
+          ]
+        },
+        "M": {
+          "YOUNGADULT": [
+            2.4,
+            64.9,
+            25.7,
+            6.0,
+            0.6,
+            0.4
+          ],
+          "ADULT": [
+            0.4,
+            38.2,
+            44.1,
+            14.5,
+            1.9,
+            0.8
+          ],
+          "ELDER": [
+            0.4,
+            25.1,
+            51.6,
+            19.9,
+            2.4,
+            0.6
+          ]
+        },
+        "_source": "[S] NCD-RisC 2024; classes <18.5 / 18.5-25 / 25-30 / 30-35 / 35-40 / >=40"
+      },
+      "youth": {
+        "CHILD_F": [
+          33.5,
+          12.8,
+          1.7
+        ],
+        "CHILD_M": [
+          35.9,
+          17.9,
+          2.6
+        ],
+        "TEEN_F": [
+          22.1,
+          5.5,
+          1.7
+        ],
+        "TEEN_M": [
+          27.8,
+          9.7,
+          2.6
+        ],
+        "_source": "[S] NCD-RisC 2024 children (overweight, obesity, thinness)"
+      },
+      "muscle": {
+        "p": 0.119,
+        "_source": "[S] EHIS 2019, muscle strengthening >= 2 days/week"
+      }
+    },
+    "netherlands": {
+      "label": "Netherlands",
+      "origins": {
+        "european": 82,
+        "mena": 6.5,
+        "ssa": 3.3,
+        "east_asian": 0.7,
+        "south_asian": 1.3,
+        "se_asian": 1,
+        "latin": 0.7,
+        "mixed": 4,
+        "_source": "[I] CBS 2025"
+      },
+      "european": {
+        "skin_L": [
+          85,
+          4
+        ],
+        "hair": {
+          "red": 2.6,
+          "blond": 20.9,
+          "light_brown": 50.5,
+          "dark_brown": 24,
+          "black": 2
+        },
+        "eyes_M": {
+          "blue": 74,
+          "inter": 6,
+          "brown": 20
+        },
+        "eyes_F": {
+          "blue": 56,
+          "inter": 18,
+          "brown": 26
+        },
+        "_source": "[S] Sulem 2007 (n=1,214), dark brown / black split [D]"
+      },
+      "bmi": {
+        "F": {
+          "YOUNGADULT": [
+            6.1,
+            68.9,
+            16.0,
+            5.9,
+            2.1,
+            1.0
+          ],
+          "ADULT": [
+            1.5,
+            54.5,
+            27.9,
+            10.3,
+            3.7,
+            2.0
+          ],
+          "ELDER": [
+            1.0,
+            36.1,
+            37.6,
+            16.8,
+            6.0,
+            2.3
+          ]
+        },
+        "M": {
+          "YOUNGADULT": [
+            2.3,
+            67.9,
+            23.5,
+            5.0,
+            0.7,
+            0.5
+          ],
+          "ADULT": [
+            0.3,
+            39.9,
+            42.7,
+            14.0,
+            2.3,
+            0.9
+          ],
+          "ELDER": [
+            0.1,
+            26.8,
+            49.6,
+            19.3,
+            3.6,
+            0.6
+          ]
+        },
+        "_source": "[S] NCD-RisC 2024; classes <18.5 / 18.5-25 / 25-30 / 30-35 / 35-40 / >=40"
+      },
+      "youth": {
+        "CHILD_F": [
+          18.1,
+          4.9,
+          1.5
+        ],
+        "CHILD_M": [
+          21.1,
+          6.3,
+          2.0
+        ],
+        "TEEN_F": [
+          15.7,
+          4.1,
+          1.5
+        ],
+        "TEEN_M": [
+          17.4,
+          5.0,
+          2.0
+        ],
+        "_source": "[S] NCD-RisC 2024 children (overweight, obesity, thinness)"
+      },
+      "muscle": {
+        "p": 0.202,
+        "_source": "[S] EHIS 2019, muscle strengthening >= 2 days/week"
+      }
+    },
+    "sweden": {
+      "label": "Sweden",
+      "origins": {
+        "european": 86,
+        "mena": 7.5,
+        "ssa": 2.7,
+        "east_asian": 0.5,
+        "south_asian": 0.6,
+        "se_asian": 0.6,
+        "latin": 0.7,
+        "mixed": 1.5,
+        "_source": "[I] SCB 2024"
+      },
+      "european": {
+        "skin_L": [
+          86,
+          4
+        ],
+        "hair": {
+          "red": 4,
+          "blond": 18,
+          "light_brown": 50,
+          "dark_brown": 25,
+          "black": 3
+        },
+        "eyes_M": {
+          "blue": 74,
+          "inter": 10,
+          "brown": 16
+        },
+        "eyes_F": {
+          "blue": 64,
+          "inter": 19,
+          "brown": 17
+        },
+        "_source": "[D] between Iceland and the Netherlands, no Swedish data"
+      },
+      "bmi": {
+        "F": {
+          "YOUNGADULT": [
+            5.9,
+            61.7,
+            20.6,
+            8.0,
+            2.1,
+            1.6
+          ],
+          "ADULT": [
+            1.4,
+            51.1,
+            30.0,
+            11.9,
+            3.8,
+            1.8
+          ],
+          "ELDER": [
+            1.2,
+            36.6,
+            39.5,
+            15.6,
+            5.5,
+            1.6
+          ]
+        },
+        "M": {
+          "YOUNGADULT": [
+            1.7,
+            56.6,
+            29.7,
+            7.8,
+            2.9,
+            1.2
+          ],
+          "ADULT": [
+            0.2,
+            29.2,
+            48.9,
+            16.4,
+            3.9,
+            1.4
+          ],
+          "ELDER": [
+            0.2,
+            26.1,
+            51.0,
+            17.9,
+            3.9,
+            0.8
+          ]
+        },
+        "_source": "[S] NCD-RisC 2024; classes <18.5 / 18.5-25 / 25-30 / 30-35 / 35-40 / >=40"
+      },
+      "youth": {
+        "CHILD_F": [
+          30.0,
+          9.8,
+          1.2
+        ],
+        "CHILD_M": [
+          32.9,
+          13.9,
+          2.3
+        ],
+        "TEEN_F": [
+          27.8,
+          8.4,
+          1.2
+        ],
+        "TEEN_M": [
+          32.1,
+          13.3,
+          2.3
+        ],
+        "_source": "[S] NCD-RisC 2024 children (overweight, obesity, thinness)"
+      },
+      "muscle": {
+        "p": 0.439,
+        "_source": "[S] EHIS 2019, muscle strengthening >= 2 days/week"
+      }
+    },
+    "poland": {
+      "label": "Poland",
+      "origins": {
+        "european": 99.3,
+        "mena": 0.3,
+        "ssa": 0.1,
+        "east_asian": 0.2,
+        "south_asian": 0.2,
+        "se_asian": 0.2,
+        "latin": 0.1,
+        "mixed": 0.2,
+        "_source": "[I] GUS 2021-2025"
+      },
+      "european": {
+        "skin_L": [
+          85,
+          4
+        ],
+        "hair": {
+          "red": 2,
+          "blond": 14,
+          "light_brown": 47,
+          "dark_brown": 33,
+          "black": 4
+        },
+        "eyes_M": {
+          "blue": 52,
+          "inter": 18,
+          "brown": 30
+        },
+        "eyes_F": {
+          "blue": 45,
+          "inter": 23,
+          "brown": 32
+        },
+        "_source": "[D] no categorical data (Candille 2012: lighter than Italy)"
+      },
+      "bmi": {
+        "F": {
+          "YOUNGADULT": [
+            10.5,
+            71.3,
+            13.1,
+            3.8,
+            1.0,
+            0.4
+          ],
+          "ADULT": [
+            1.0,
+            48.7,
+            30.3,
+            13.7,
+            4.1,
+            2.2
+          ],
+          "ELDER": [
+            0.5,
+            23.4,
+            36.9,
+            27.4,
+            8.4,
+            3.5
+          ]
+        },
+        "M": {
+          "YOUNGADULT": [
+            2.5,
+            52.4,
+            33.4,
+            8.8,
+            2.2,
+            0.7
+          ],
+          "ADULT": [
+            0.2,
+            19.6,
+            47.5,
+            24.5,
+            6.3,
+            2.0
+          ],
+          "ELDER": [
+            0.3,
+            17.7,
+            47.3,
+            27.0,
+            6.2,
+            1.4
+          ]
+        },
+        "_source": "[S] NCD-RisC 2024; classes <18.5 / 18.5-25 / 25-30 / 30-35 / 35-40 / >=40"
+      },
+      "youth": {
+        "CHILD_F": [
+          25.8,
+          8.7,
+          3.2
+        ],
+        "CHILD_M": [
+          34.8,
+          16.6,
+          3.4
+        ],
+        "TEEN_F": [
+          20.5,
+          5.3,
+          3.2
+        ],
+        "TEEN_M": [
+          30.5,
+          11.1,
+          3.4
+        ],
+        "_source": "[S] NCD-RisC 2024 children (overweight, obesity, thinness)"
+      },
+      "muscle": {
+        "p": 0.09,
+        "_source": "[S] EHIS 2019, muscle strengthening >= 2 days/week"
+      }
+    },
+    "europe": {
+      "label": "Europe (population-weighted average of DE, UK, FR, IT, ES, PL, NL, SE)",
+      "origins": {
+        "european": 87.94,
+        "mena": 4.41,
+        "ssa": 2.2,
+        "east_asian": 0.54,
+        "south_asian": 1.85,
+        "se_asian": 0.44,
+        "latin": 1.3,
+        "mixed": 1.68,
+        "_source": "[I] population-weighted average of the 8 country profiles (2024 populations)"
+      },
+      "european": {
+        "_source": "[I] population-weighted average of the 8 country profiles",
+        "skin_L": [
+          82.9,
+          4
+        ],
+        "hair": {
+          "red": 2.28,
+          "blond": 11.81,
+          "light_brown": 36.37,
+          "dark_brown": 39.03,
+          "black": 10.27
+        },
+        "eyes_M": {
+          "blue": 42.3,
+          "inter": 17.36,
+          "brown": 40.34
+        },
+        "eyes_F": {
+          "blue": 35.58,
+          "inter": 22.63,
+          "brown": 41.8
+        }
+      },
+      "bmi": {
+        "_source": "[I] population-weighted average of NCD-RisC 2024 country tables",
+        "F": {
+          "YOUNGADULT": [
+            7.46,
+            63.67,
+            19.22,
+            5.91,
+            2.31,
+            1.38
+          ],
+          "ADULT": [
+            1.91,
+            51.33,
+            27.53,
+            11.65,
+            4.64,
+            2.9
+          ],
+          "ELDER": [
+            1.17,
+            33.84,
+            35.34,
+            19.63,
+            7.1,
+            2.92
+          ]
+        },
+        "M": {
+          "YOUNGADULT": [
+            3.97,
+            61.37,
+            25.65,
+            6.38,
+            1.7,
+            0.91
+          ],
+          "ADULT": [
+            0.49,
+            32.35,
+            43.99,
+            17.62,
+            3.89,
+            1.69
+          ],
+          "ELDER": [
+            0.33,
+            22.28,
+            48.73,
+            22.45,
+            4.88,
+            1.34
+          ]
+        }
+      },
+      "youth": {
+        "CHILD_F": [
+          26.23,
+          8.76,
+          1.84
+        ],
+        "CHILD_M": [
+          28.79,
+          12.74,
+          3.33
+        ],
+        "TEEN_F": [
+          23.16,
+          6.66,
+          1.84
+        ],
+        "TEEN_M": [
+          26.07,
+          9.89,
+          3.33
+        ],
+        "_source": "[I] population-weighted average of NCD-RisC 2024"
+      },
+      "muscle": {
+        "p": 0.21,
+        "_source": "[I] population-weighted average (UK uses the EU mean)"
+      }
+    }
+  },
+  "bmi_classes": {
+    "bounds": [
+      [
+        16.0,
+        18.5
+      ],
+      [
+        18.5,
+        25.0
+      ],
+      [
+        25.0,
+        30.0
+      ],
+      [
+        30.0,
+        35.0
+      ],
+      [
+        35.0,
+        40.0
+      ],
+      [
+        40.0,
+        48.0
+      ]
+    ],
+    "_status": "[D] uniform sampling bounds within each class"
+  },
+  "silhouettes": {
+    "M": [
+      19.1,
+      21.2,
+      22.3,
+      24.0,
+      25.9,
+      28.5,
+      30.1,
+      37.3,
+      44.4
+    ],
+    "F": [
+      17.9,
+      19.9,
+      20.9,
+      23.1,
+      25.7,
+      28.8,
+      33.9,
+      38.1,
+      43.6
+    ],
+    "_source": "[S] Parzer et al. 2021, mean BMI per Stunkard silhouette 1 to 9"
+  },
+  "hair_texture": {
+    "european": {
+      "HairTexture_Straight": 50,
+      "HairTexture_Wavy": 40,
+      "HairTexture_Curly": 10
+    },
+    "mena": {
+      "HairTexture_Straight": 25,
+      "HairTexture_Wavy": 45,
+      "HairTexture_Curly": 30
+    },
+    "ssa": {
+      "HairTexture_Straight": 3,
+      "HairTexture_Wavy": 7,
+      "HairTexture_Curly": 90
+    },
+    "east_asian": {
+      "HairTexture_Straight": 90,
+      "HairTexture_Wavy": 10
+    },
+    "se_asian": {
+      "HairTexture_Straight": 80,
+      "HairTexture_Wavy": 18,
+      "HairTexture_Curly": 2
+    },
+    "south_asian": {
+      "HairTexture_Straight": 45,
+      "HairTexture_Wavy": 45,
+      "HairTexture_Curly": 10
+    },
+    "latin": {
+      "HairTexture_Straight": 40,
+      "HairTexture_Wavy": 40,
+      "HairTexture_Curly": 20
+    },
+    "_status": "[D] no frequency data found; indicative split per group"
+  }
+}

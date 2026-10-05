@@ -1,0 +1,6 @@
+dist/
+__pycache__/
+*.pyc
+host37_error.txt
+data/rsim_cc.json
+*.log
