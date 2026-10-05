@@ -6,12 +6,14 @@ rsim.spawn [count=35] [age=adult|young_adult|teen|child|elder|mix|family] [profi
     family:  households of two adults and two children (tests household coherence)
 rsim.profiles  lists the available profiles
 rsim.freeze    disables autonomy on every preview Sim
+rsim.reroll    applies the profile to generated Sims already in the save (dry run unless 'confirm')
 rsim.clear     permanently deletes every preview Sim
 
 Profiles are read from rsim_profiles.json, rsim_tones.json and rsim_cc.json, next to the .ts4script.
 rsim.cfg chooses the default profile ("default" in rsim.spawn) and whether custom content may be used.
 """
 import configparser
+import importlib
 import json
 import os
 import random
@@ -29,8 +31,9 @@ from protocolbuffers import Outfits_pb2
 from sims.household_enums import HouseholdChangeOrigin
 from sims.occult.occult_enums import OccultType
 from sims.outfits.outfit_enums import BodyType
-from sims.sim_info_types import Age, Species
+from sims.sim_info_types import Age, Gender, Species
 from sims.sim_spawner import SimCreator, SimSpawner
+from sims.sim_spawner_enums import SimInfoCreationSource
 from tag import Tag
 
 from rsim_engine import Engine
@@ -347,6 +350,181 @@ def _install_hook():
 
 
 _install_hook()
+
+
+# --- dating app and adoption: generate_random_siminfo -----------------------------------------
+
+class _BaseAdapter:
+    """View of a native BaseSimInfo exposing what apply_look needs (adoption and dating app Sims)."""
+
+    occult_types = OccultType.HUMAN
+
+    def __init__(self, base):
+        self._base = base
+
+    @property
+    def id(self):
+        return self._base.sim_id
+
+    @property
+    def age(self):
+        return Age(self._base.age)
+
+    @property
+    def gender(self):
+        return Gender(self._base.gender)
+
+    @property
+    def species(self):
+        return Species.HUMAN if int(self._base.species) == int(Species.HUMAN) else None
+
+    @property
+    def skin_tone(self):
+        return self._base.skin_tone
+
+    @skin_tone.setter
+    def skin_tone(self, value):
+        self._base.skin_tone = value
+
+    @property
+    def skin_tone_val_shift(self):
+        return self._base.skin_tone_val_shift
+
+    @skin_tone_val_shift.setter
+    def skin_tone_val_shift(self, value):
+        self._base.skin_tone_val_shift = value
+
+    @property
+    def physique(self):
+        return self._base.physique
+
+    @physique.setter
+    def physique(self, value):
+        self._base.physique = value
+
+    def save_outfits(self):
+        outfits = Outfits_pb2.OutfitList()
+        outfits.ParseFromString(self._base.outfits)
+        return outfits
+
+    def load_outfits(self, outfits):
+        self._base.outfits = outfits.SerializeToString()
+
+
+def _after_random_siminfo(base):
+    if _Hook.suppressed:
+        return
+    engine = _load()
+    if not engine.settings.get('auto_apply', True):
+        return
+    profile = engine.settings.get('default_profile', 'europe')
+    if profile not in engine.data['profiles']:
+        return
+    sim = _BaseAdapter(base)
+    if _eligible(sim):
+        apply_profile(sim, profile, random.Random())
+        _debug('auto: profile {} applied to random Sim info {}'.format(profile, sim.id))
+
+
+def _wrap_random_siminfo(original):
+    def generate_random_siminfo(base, *args, **kwargs):
+        result = original(base, *args, **kwargs)
+        try:
+            _after_random_siminfo(base)
+        except Exception:
+            _log('auto mode error (random Sim info):\n' + traceback.format_exc())
+        return result
+    generate_random_siminfo.rsim_wrapped = True
+    return generate_random_siminfo
+
+
+def _install_random_siminfo_hooks():
+    # Both modules import the native function by name, so each module attribute is wrapped.
+    for module_name in ('adoption.adoption_service', 'services.matchmaking_service'):
+        try:
+            module = importlib.import_module(module_name)
+        except Exception:
+            continue
+        original = getattr(module, 'generate_random_siminfo', None)
+        if original is not None and not getattr(original, 'rsim_wrapped', False):
+            module.generate_random_siminfo = _wrap_random_siminfo(original)
+
+
+_install_random_siminfo_hooks()
+
+
+# --- rerolling Sims that already exist in the save --------------------------------------------
+
+# Sims the game generated itself, and creation sources that must never be touched.
+GENERATED_SOURCES = (SimInfoCreationSource.FILTER | SimInfoCreationSource.NEIGHBORHOOD_POPULATION_SERVICE
+                     | SimInfoCreationSource.HOUSEHOLD_TEMPLATE)
+PROTECTED_SOURCES = (SimInfoCreationSource.PRE_MADE | SimInfoCreationSource.CAS_INITIAL
+                     | SimInfoCreationSource.CAS_REENTRY | SimInfoCreationSource.GALLERY
+                     | SimInfoCreationSource.PREGNANCY | SimInfoCreationSource.ADOPTION
+                     | SimInfoCreationSource.CLONED)
+
+
+def _creation_flags(sim_info):
+    source = getattr(sim_info, 'creation_source', None)
+    source = getattr(source, 'creation_source', source)  # SimInfoCreationSourceData wraps the flags
+    try:
+        return int(source)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _rerollable_households():
+    active = services.active_household()
+    households = []
+    for household in services.household_manager().values():
+        if household is active or household.is_played_household:
+            continue
+        members = list(household)
+        if not members:
+            continue
+        flags = [_creation_flags(s) for s in members]
+        # Whole household or nothing: a single hand-made, born or adopted member protects it.
+        if any(f & PROTECTED_SOURCES or not f & GENERATED_SOURCES for f in flags):
+            continue
+        if any(s.last_name in (LAST_NAME,) + LEGACY_LAST_NAMES for s in members):
+            continue
+        households.append((household, members))
+    return households
+
+
+@sims4.commands.Command('rsim.reroll', command_type=sims4.commands.CommandType.Live)
+def rsim_reroll(confirm: str = '', profile: str = 'default', _connection=None):
+    output = sims4.commands.CheatOutput(_connection)
+    try:
+        engine = _load()
+    except Exception as exc:
+        output('rsim: cannot read the JSON files ({!r})'.format(exc))
+        return False
+    if profile == 'default':
+        profile = engine.settings.get('default_profile', 'europe')
+    if profile not in engine.data['profiles']:
+        output('rsim: unknown profile {} ({})'.format(profile, ', '.join(engine.profiles())))
+        return False
+    households = _rerollable_households()
+    sims = sum(len(m) for _, m in households)
+    if confirm.lower() != 'confirm':
+        output('rsim: {} generated households ({} Sims) can be rerolled with profile {}. '
+               'Played households, hand-made, premade, born and adopted Sims are left alone. '
+               'Save first, then run: rsim.reroll confirm'.format(len(households), sims, profile))
+        return True
+    rng = random.Random()
+    changed = errors = 0
+    _log('# reroll {}: {} households, profile {}'.format(time.strftime('%Y-%m-%d %H:%M:%S'), len(households), profile))
+    for household, members in households:
+        try:
+            for sim_info, look in apply_profile_to_household(members, profile, rng):
+                sim_info.resend_physical_attributes()
+                changed += 1
+        except Exception:
+            errors += 1
+            _log('reroll error on household {}:\n{}'.format(household.id, traceback.format_exc()))
+    output('rsim: {} Sims rerolled with profile {}, {} errors (details in {})'.format(changed, profile, errors, LOG_NAME))
+    return True
 
 
 # --- commands ---------------------------------------------------------------------------------

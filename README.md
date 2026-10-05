@@ -59,8 +59,9 @@ Same spot, 35 adults with the `france` profile:
 
 ![35 adults with the france profile](docs/img/profile_france_35_adults.jpg)
 
-Newborns, clones, adopted and reincarnated Sims, relatives built from a parent's genetics and
-premade Sims are never changed.
+The profile also applies to dating app profiles and to Sims offered for adoption. Newborns,
+clones, reincarnated Sims, relatives built from a parent's genetics and premade Sims are never
+changed. Sims that already exist in a save are only changed on request, with `rsim.reroll`.
 
 ## Profiles
 
@@ -100,6 +101,7 @@ official_only = true
 | `rsim.spawn [count] [age] [profile]` | Spawns test Sims around the active Sim. Age: adult, young_adult, teen, child, elder, mix, or `family` (households of two adults and two children). Profile: a profile name, `default` (from the cfg), `vanilla` (untouched game generator) or `auto` (generated like a townie, through the automatic mode). |
 | `rsim.profiles` | Lists the profiles |
 | `rsim.freeze` | Disables autonomy on the test Sims |
+| `rsim.reroll [confirm] [profile]` | Applies the profile to generated Sims already in the save. Without `confirm` it only counts them. Played households and hand-made, premade, born or adopted Sims are never touched. |
 | `rsim.clear` | Deletes the test Sims |
 
 ## Known issue in the base game
