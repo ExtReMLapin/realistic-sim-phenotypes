@@ -1,3 +1,5 @@
+<img src="docs/img/logo.png" alt="" width="160" align="right">
+
 # Realistic Sim Phenotypes
 
 A script mod for The Sims 4 that gives generated Sims (townies, NPCs, service Sims) a skin tone,
