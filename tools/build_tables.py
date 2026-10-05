@@ -2,9 +2,8 @@
 
 - rsim_tones.json: every skin tone (TONE 0x0354796A) with its CAS swatch lightness L*,
   a "human" flag (plausible skin hue) and a "cc" flag.
-- rsim_official_parts.bin: sorted uint64 instance ids of every official CAS part (CASP 0x034AEECB);
-  anything missing from it is treated as custom content. This file is the one shipped with the mod.
-- rsim_cc.json:    instance ids of the CAS parts found in your Mods folder (optional, local use).
+Run it with TS4_MODS_DIR pointing to an empty folder so no custom content ends up in the shipped
+table. CAS parts need no table: EA parts have 32-bit instance ids, CC tools generate 64-bit ones.
 
 Usage: python build_tables.py [output_dir]   (Python 3.8+, the game does not need to run)
 """
@@ -79,12 +78,8 @@ def main():
                          'human': is_human(r, g, b), 'cc': source == 'cc'})
     with open(os.path.join(out, 'rsim_tones.json'), 'w', encoding='utf-8') as f:
         json.dump({'tones': rows}, f, separators=(',', ':'))
-    with open(os.path.join(out, 'rsim_official_parts.bin'), 'wb') as f:
-        f.write(struct.pack('<{}Q'.format(len(game_parts)), *sorted(game_parts)))
-    with open(os.path.join(out, 'rsim_cc.json'), 'w', encoding='utf-8') as f:
-        json.dump({'cas_parts': sorted(cc_parts)}, f, separators=(',', ':'))
-    print('official parts: {}'.format(len(game_parts)))
-    print('tones: {} official, {} CC; CC parts: {}'.format(len(game_tones), len(rows) - len(game_tones), len(cc_parts)))
+    print('official CAS parts: {}, of which above 2**32: {}'.format(len(game_parts), sum(1 for i in game_parts if i >= 1 << 32)))
+    print('tones: {} official, {} CC; CC parts found: {}'.format(len(game_tones), len(rows) - len(game_tones), len(cc_parts)))
 
 
 if __name__ == '__main__':

@@ -9,10 +9,9 @@ rsim.freeze    disables autonomy on every preview Sim
 rsim.reroll    applies the profile to generated Sims already in the save (dry run unless 'confirm')
 rsim.clear     permanently deletes every preview Sim
 
-Profiles are read from rsim_profiles.json, rsim_tones.json and rsim_official_parts.bin, next to the .ts4script.
+Profiles are read from rsim_profiles.json and rsim_tones.json, next to the .ts4script.
 rsim.cfg chooses the default profile ("default" in rsim.spawn) and whether custom content may be used.
 """
-import array
 import configparser
 import importlib
 import json
@@ -80,9 +79,7 @@ def _debug(line):
 
 class _Data:
     engine = None
-    official_parts = None
     tones = None
-    cc_parts = None
     tags = {}
     catalogs = {}
 
@@ -118,19 +115,6 @@ def _load():
             engine.settings[key] = config[key]
     with open(os.path.join(base, 'rsim_tones.json'), encoding='utf-8') as f:
         _Data.tones = json.load(f)['tones']
-    # Official part list shipped with the mod: anything missing from it counts as custom content.
-    try:
-        with open(os.path.join(base, 'rsim_official_parts.bin'), 'rb') as f:
-            ids = array.array('Q')
-            ids.frombytes(f.read())
-            _Data.official_parts = frozenset(ids)
-    except OSError:
-        _Data.official_parts = None
-    try:
-        with open(os.path.join(base, 'rsim_cc.json'), encoding='utf-8') as f:
-            _Data.cc_parts = frozenset(json.load(f)['cas_parts'])
-    except OSError:
-        _Data.cc_parts = frozenset()
     _Data.engine = engine
     return engine
 
@@ -144,6 +128,12 @@ def _tag(name):
     return _Data.tags[name]
 
 
+def _is_official_part(part_id):
+    # Every EA CAS part has a 32-bit instance id; CC tools generate 64-bit ids (high bit set).
+    # Checked on 1.128.90: 112,312 of 112,312 official parts below 2**32, 1 of 105,548 CC parts.
+    return part_id < 0x100000000
+
+
 def _catalog(sim_info, body_type):
     """{part_id: set(tags)} of the parts of this body type valid for the Sim's age and gender."""
     key = (int(body_type), int(sim_info.age), int(sim_info.gender))
@@ -154,12 +144,8 @@ def _catalog(sim_info, body_type):
         catalog = {}
         for part_id, value in parts.items():
             part_id = int(part_id)
-            if official_only:
-                if _Data.official_parts is not None:
-                    if part_id not in _Data.official_parts:
-                        continue
-                elif part_id in _Data.cc_parts:
-                    continue
+            if official_only and not _is_official_part(part_id):
+                continue
             tags = value[0] if isinstance(value, tuple) else value
             catalog[part_id] = set(int(t) for t in tags)
         _Data.catalogs[key] = catalog

@@ -12,6 +12,6 @@ with zipfile.ZipFile(out, 'w', zipfile.ZIP_STORED) as z:
         py_compile.compile(os.path.join(ROOT, 'src', name + '.py'), cfile=pyc, dfile=name + '.py', doraise=True)
         z.write(pyc, name + '.pyc')
         os.remove(pyc)
-for name in ('rsim_profiles.json', 'rsim_tones.json', 'rsim_official_parts.bin', 'rsim.cfg'):
+for name in ('rsim_profiles.json', 'rsim_tones.json', 'rsim.cfg'):
     if os.path.exists(os.path.join(ROOT, 'data', name)):
         shutil.copy(os.path.join(ROOT, 'data', name), DIST)

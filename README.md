@@ -112,10 +112,10 @@ no catalogue entry passes the filter, the loop never ends. It happens without an
 
 ## Building
 
-- `python tools/build_tables.py data` regenerates `rsim_tones.json` (skin tone lightness) and
-  `rsim_official_parts.bin` (every official CAS part; anything else counts as custom content).
-  Set `TS4_GAME_DIR` if needed, and point `TS4_MODS_DIR` to an empty folder so that no custom
-  content ends up in the shipped tables.
+- `python tools/build_tables.py data` regenerates `rsim_tones.json` (official skin tones and their
+  lightness). Set `TS4_GAME_DIR` if needed, and point `TS4_MODS_DIR` to an empty folder so that no
+  custom content ends up in the shipped table. CAS parts need no table: EA parts have 32-bit
+  instance ids, while CC tools generate 64-bit ones.
 - `build37.py` must run under Python 3.7 (the game's version); it writes `dist/`.
 
 ## License
