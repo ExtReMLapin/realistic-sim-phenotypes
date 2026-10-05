@@ -70,7 +70,8 @@ changed. Sims that already exist in a save are only changed on request, with `rs
 `europe` (population-weighted average), `france`, `uk`, `usa`, `germany`, `spain`, `italy`,
 `netherlands`, `sweden`, `poland`.
 
-Every block of `data/rsim_profiles.json` carries its source and a status:
+Every block of `data/rsim_profiles.json` carries its source and a status. The file is packed inside
+`rsim.ts4script`; to edit a profile, put your own copy of `rsim_profiles.json` next to the mod:
 
 - **[S]** sourced: taken from a study or an official statistic
 - **[I]** computed or interpolated from sources
@@ -118,7 +119,8 @@ no catalogue entry passes the filter, the loop never ends. It happens without an
   lightness). Set `TS4_GAME_DIR` if needed, and point `TS4_MODS_DIR` to an empty folder so that no
   custom content ends up in the shipped table. CAS parts need no table: EA parts have 32-bit
   instance ids, while CC tools generate 64-bit ones.
-- `build37.py` must run under Python 3.7 (the game's version); it writes `dist/`.
+- `build37.py` must run under Python 3.7 (the game's version); it writes `dist/` (`rsim.ts4script`,
+  with the JSON data packed inside, and `rsim.cfg`).
 
 ## License
 

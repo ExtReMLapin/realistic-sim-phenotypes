@@ -9,7 +9,8 @@ rsim.freeze    disables autonomy on every preview Sim
 rsim.reroll    applies the profile to generated Sims already in the save (dry run unless 'confirm')
 rsim.clear     permanently deletes every preview Sim
 
-Profiles are read from rsim_profiles.json and rsim_tones.json, next to the .ts4script.
+Profiles are read from rsim_profiles.json and rsim_tones.json, packed inside the .ts4script; a copy
+placed next to the .ts4script takes precedence.
 rsim.cfg chooses the default profile ("default" in rsim.spawn) and whether custom content may be used.
 """
 import configparser
@@ -19,6 +20,7 @@ import os
 import random
 import time
 import traceback
+import zipfile
 
 import services
 import sims4.commands
@@ -102,19 +104,30 @@ def _read_config():
     return config
 
 
+def _read_json(name):
+    """A copy next to the .ts4script wins (for players editing profiles); otherwise use the one packed inside it.
+
+    CurseForge only accepts .ts4script, .package, .cfg, .txt and .binary files in Mods archives.
+    """
+    loose = os.path.join(_mod_dir(), name)
+    if os.path.isfile(loose):
+        with open(loose, encoding='utf-8') as f:
+            return json.load(f)
+    archive = os.path.dirname(os.path.abspath(__file__))
+    with zipfile.ZipFile(archive) as z:
+        return json.loads(z.read(name).decode('utf-8'))
+
+
 def _load():
     if _Data.engine is not None:
         return _Data.engine
-    base = _mod_dir()
-    with open(os.path.join(base, 'rsim_profiles.json'), encoding='utf-8') as f:
-        engine = Engine(json.load(f))
+    engine = Engine(_read_json('rsim_profiles.json'))
     config = _read_config()
     engine.settings['default_profile'] = config['profile']
     for key in ('official_only', 'auto_apply'):
         if key in config:
             engine.settings[key] = config[key]
-    with open(os.path.join(base, 'rsim_tones.json'), encoding='utf-8') as f:
-        _Data.tones = json.load(f)['tones']
+    _Data.tones = _read_json('rsim_tones.json')['tones']
     _Data.engine = engine
     return engine
 
