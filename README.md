@@ -1,4 +1,4 @@
-# Realistic Sim Phenotypes (working title)
+# Realistic Sim Phenotypes
 
 A script mod for The Sims 4 that gives generated Sims (townies, NPCs, service Sims) a skin tone,
 hair colour, eye colour and body shape drawn from real population data, instead of a random pick
