@@ -97,7 +97,7 @@ official_only = true
 
 | Command | Effect |
 |---|---|
-| `rsim.spawn [count] [age] [profile]` | Spawns test Sims around the active Sim. Age: adult, young_adult, teen, child, elder, mix. Profile: a profile name, `default` (from the cfg) or `vanilla`. |
+| `rsim.spawn [count] [age] [profile]` | Spawns test Sims around the active Sim. Age: adult, young_adult, teen, child, elder, mix, or `family` (households of two adults and two children). Profile: a profile name, `default` (from the cfg), `vanilla` (untouched game generator) or `auto` (generated like a townie, through the automatic mode). |
 | `rsim.profiles` | Lists the profiles |
 | `rsim.freeze` | Disables autonomy on the test Sims |
 | `rsim.clear` | Deletes the test Sims |

@@ -1,6 +1,9 @@
 """Random Sim preview: spawns N generated Sims around the active Sim, vanilla or with a realistic profile.
 
-rsim.spawn [count=35] [age=adult|young_adult|teen|child|elder|mix] [profile=default|vanilla|europe|france|...]
+rsim.spawn [count=35] [age=adult|young_adult|teen|child|elder|mix|family] [profile=default|vanilla|auto|europe|...]
+    vanilla: the game's own generator, untouched
+    auto:    generated exactly like a townie, through the automatic mode hook (tests auto_apply)
+    family:  households of two adults and two children (tests household coherence)
 rsim.profiles  lists the available profiles
 rsim.freeze    disables autonomy on every preview Sim
 rsim.clear     permanently deletes every preview Sim
@@ -379,11 +382,11 @@ def rsim_spawn(count: int = 35, age: str = 'adult', profile: str = 'default', _c
         output('rsim: no active Sim')
         return False
     age = age.lower()
-    if age != 'mix' and age not in AGES:
-        output('rsim: unknown age {} (adult, young_adult, teen, child, elder, mix)'.format(age))
+    if age not in ('mix', 'family') and age not in AGES:
+        output('rsim: unknown age {} (adult, young_adult, teen, child, elder, mix, family)'.format(age))
         return False
     profile = profile.lower()
-    if profile != 'vanilla':
+    if profile not in ('vanilla', 'auto'):
         try:
             engine = _load()
         except Exception as exc:
@@ -399,37 +402,52 @@ def rsim_spawn(count: int = 35, age: str = 'adult', profile: str = 'default', _c
     situation_manager = services.get_zone_situation_manager()
     _log('# batch {}: {} Sims, age {}, profile {}'.format(time.strftime('%Y-%m-%d %H:%M:%S'), count, age, profile))
     _log('sim_id\tage\tgender\tskin_tone\tphysique\torigin\thair\ttexture\teyes\tbmi\tstatus')
-    _Hook.suppressed += 1
+    if profile != 'auto':
+        _Hook.suppressed += 1
     try:
         _spawn_batch(client, active, count, age, profile, rng, household_manager, situation_manager, output)
     finally:
-        _Hook.suppressed -= 1
+        if profile != 'auto':
+            _Hook.suppressed -= 1
     return True
+
+
+FAMILY = (Age.ADULT, Age.ADULT, Age.CHILD, Age.TEEN)
 
 
 def _spawn_batch(client, active, count, age, profile, rng, household_manager, situation_manager, output):
     spawned = errors = not_shown = 0
-    for position in _grid_positions(active.position, count):
+    positions = list(_grid_positions(active.position, count))
+    # The automatic mode skips this mod's own source name; 'auto' uses a neutral one to go through it.
+    source = 'rsim_test_auto' if profile == 'auto' else 'rsim_preview'
+    while positions:
+        if age == 'family':
+            ages = FAMILY[:len(positions)]
+        else:
+            ages = (random.choice(MIX) if age == 'mix' else AGES[age],)
         try:
-            sim_age = random.choice(MIX) if age == 'mix' else AGES[age]
             household = household_manager.create_household(client.account)
-            _debug('generating Sim {} ({})'.format(spawned + not_shown + 1, sim_age.name))
+            _debug('generating {} Sim(s) ({})'.format(len(ages), ', '.join(a.name for a in ages)))
             sim_infos, _ = SimSpawner.create_sim_infos(
-                [SimCreator(age=sim_age, last_name=LAST_NAME)], household=household, account=client.account, zone_id=0,
-                creation_source='rsim_preview', household_change_origin=HouseholdChangeOrigin.CHEAT_SIMS_SPAWN)
+                [SimCreator(age=a, last_name=LAST_NAME) for a in ages], household=household, account=client.account,
+                zone_id=0, creation_source=source, household_change_origin=HouseholdChangeOrigin.CHEAT_SIMS_SPAWN)
         except Exception:
             errors += 1
+            positions = positions[len(ages):]
             _log('generation error:\n' + traceback.format_exc())
             continue
+        looks = {}
+        if profile not in ('vanilla', 'auto'):
+            _debug('applying profile {} to {} Sim(s)'.format(profile, len(sim_infos)))
+            try:
+                looks = {s.id: look for s, look in apply_profile_to_household(sim_infos, profile, rng)}
+            except Exception:
+                errors += 1
+                _log('profile error:\n' + traceback.format_exc())
         for sim_info in sim_infos:
-            look = None
-            if profile != 'vanilla':
-                _debug('applying profile {} to {}'.format(profile, sim_info.id))
-                try:
-                    look = apply_profile(sim_info, profile, rng)
-                except Exception:
-                    errors += 1
-                    _log('profile error on {}:\n{}'.format(sim_info.id, traceback.format_exc()))
+            if not positions:
+                break
+            position = positions.pop(0)
             shown = False
             try:
                 situation_manager.add_debug_sim_id(sim_info.id)
@@ -444,7 +462,7 @@ def _spawn_batch(client, active, count, age, profile, rng, household_manager, si
                 spawned += 1
             else:
                 not_shown += 1
-            look = look or {}
+            look = looks.get(sim_info.id) or {}
             _log('\t'.join(str(v) for v in (
                 sim_info.id, sim_info.age.name, sim_info.gender.name, sim_info.skin_tone, sim_info.physique,
                 look.get('origin', ''), look.get('hair', ''), look.get('hair_texture', ''), look.get('eyes', ''),
