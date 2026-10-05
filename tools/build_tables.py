@@ -2,7 +2,9 @@
 
 - rsim_tones.json: every skin tone (TONE 0x0354796A) with its CAS swatch lightness L*,
   a "human" flag (plausible skin hue) and a "cc" flag.
-- rsim_cc.json:    instance ids of the CAS parts (CASP 0x034AEECB) found in the Mods folder.
+- rsim_official_parts.bin: sorted uint64 instance ids of every official CAS part (CASP 0x034AEECB);
+  anything missing from it is treated as custom content. This file is the one shipped with the mod.
+- rsim_cc.json:    instance ids of the CAS parts found in your Mods folder (optional, local use).
 
 Usage: python build_tables.py [output_dir]   (Python 3.8+, the game does not need to run)
 """
@@ -10,6 +12,7 @@ import colorsys
 import glob
 import json
 import os
+import struct
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -76,8 +79,11 @@ def main():
                          'human': is_human(r, g, b), 'cc': source == 'cc'})
     with open(os.path.join(out, 'rsim_tones.json'), 'w', encoding='utf-8') as f:
         json.dump({'tones': rows}, f, separators=(',', ':'))
+    with open(os.path.join(out, 'rsim_official_parts.bin'), 'wb') as f:
+        f.write(struct.pack('<{}Q'.format(len(game_parts)), *sorted(game_parts)))
     with open(os.path.join(out, 'rsim_cc.json'), 'w', encoding='utf-8') as f:
         json.dump({'cas_parts': sorted(cc_parts)}, f, separators=(',', ':'))
+    print('official parts: {}'.format(len(game_parts)))
     print('tones: {} official, {} CC; CC parts: {}'.format(len(game_tones), len(rows) - len(game_tones), len(cc_parts)))
 
 

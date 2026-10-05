@@ -9,9 +9,10 @@ rsim.freeze    disables autonomy on every preview Sim
 rsim.reroll    applies the profile to generated Sims already in the save (dry run unless 'confirm')
 rsim.clear     permanently deletes every preview Sim
 
-Profiles are read from rsim_profiles.json, rsim_tones.json and rsim_cc.json, next to the .ts4script.
+Profiles are read from rsim_profiles.json, rsim_tones.json and rsim_official_parts.bin, next to the .ts4script.
 rsim.cfg chooses the default profile ("default" in rsim.spawn) and whether custom content may be used.
 """
+import array
 import configparser
 import importlib
 import json
@@ -79,6 +80,7 @@ def _debug(line):
 
 class _Data:
     engine = None
+    official_parts = None
     tones = None
     cc_parts = None
     tags = {}
@@ -116,6 +118,14 @@ def _load():
             engine.settings[key] = config[key]
     with open(os.path.join(base, 'rsim_tones.json'), encoding='utf-8') as f:
         _Data.tones = json.load(f)['tones']
+    # Official part list shipped with the mod: anything missing from it counts as custom content.
+    try:
+        with open(os.path.join(base, 'rsim_official_parts.bin'), 'rb') as f:
+            ids = array.array('Q')
+            ids.frombytes(f.read())
+            _Data.official_parts = frozenset(ids)
+    except OSError:
+        _Data.official_parts = None
     try:
         with open(os.path.join(base, 'rsim_cc.json'), encoding='utf-8') as f:
             _Data.cc_parts = frozenset(json.load(f)['cas_parts'])
@@ -144,8 +154,12 @@ def _catalog(sim_info, body_type):
         catalog = {}
         for part_id, value in parts.items():
             part_id = int(part_id)
-            if official_only and part_id in _Data.cc_parts:
-                continue
+            if official_only:
+                if _Data.official_parts is not None:
+                    if part_id not in _Data.official_parts:
+                        continue
+                elif part_id in _Data.cc_parts:
+                    continue
             tags = value[0] if isinstance(value, tuple) else value
             catalog[part_id] = set(int(t) for t in tags)
         _Data.catalogs[key] = catalog
