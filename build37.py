@@ -2,9 +2,12 @@
 import os, py_compile, shutil, zipfile
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(ROOT, 'dist')
-if os.path.isdir(DIST):
-    shutil.rmtree(DIST)
-os.makedirs(DIST)
+# Empty dist/ instead of deleting it: the folder may be open in Explorer.
+os.makedirs(DIST, exist_ok=True)
+for old in os.listdir(DIST):
+    path = os.path.join(DIST, old)
+    if os.path.isfile(path):
+        os.remove(path)
 out = os.path.join(DIST, 'rsim.ts4script')
 with zipfile.ZipFile(out, 'w', zipfile.ZIP_STORED) as z:
     for name in ('rsim_engine', 'rsim_preview'):
