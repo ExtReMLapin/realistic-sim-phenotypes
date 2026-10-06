@@ -1,7 +1,7 @@
 """Builds the tables read by the rsim mod (run again whenever your CC changes).
 
 - rsim_tones.json: every skin tone (TONE 0x0354796A) with its CAS swatch lightness L*,
-  a "human" flag (plausible skin hue) and a "cc" flag.
+  a "human" flag (plausible skin hue), a "cc" flag and EA's archetype tags.
 Run it with TS4_MODS_DIR pointing to an empty folder so no custom content ends up in the shipped
 table. CAS parts need no table: EA parts have 32-bit instance ids, CC tools generate 64-bit ones.
 
@@ -22,6 +22,9 @@ GAME = os.environ.get('TS4_GAME_DIR', r'C:\Program Files\EA Games\The Sims 4')
 MODS = os.environ.get('TS4_MODS_DIR', os.path.join(os.path.expanduser('~'), 'Documents', 'Electronic Arts',
                                                    'The Sims 4', 'Mods'))
 T_TONE, T_CASP = 0x0354796A, 0x034AEECB
+# Tag values of Archetype_* (category 69), see build_presets.py.
+ARCHETYPES = {73: 'african', 74: 'middle_eastern', 75: 'asian', 76: 'caucasian', 88: 'south_asian',
+              89: 'north_american', 312: 'latin', 2206: 'island', 2996: 'native_american'}
 
 
 def swatch(data):
@@ -47,6 +50,14 @@ def is_human(r, g, b):
     return (h <= 0.14 or h >= 0.95) and s >= 0.08
 
 
+def tone_archetypes(data):
+    # Archetype tags (category 69): the origins EA considers this tone fits.
+    return sorted(name for value, name in ARCHETYPES.items() if struct.pack('<HI', 69, value) in data)
+
+
+archetypes = {}
+
+
 def scan(packages, want_tones, want_parts):
     tones, parts = {}, set()
     for path in packages:
@@ -57,6 +68,7 @@ def scan(packages, want_tones, want_parts):
                     rgb = swatch(data) if data else None
                     if rgb:
                         tones[i] = rgb
+                        archetypes[i] = tone_archetypes(data)
                 elif t == T_CASP and want_parts:
                     parts.add(i)
         except Exception:
@@ -75,7 +87,8 @@ def main():
     for source, tones in (('game', game_tones), ('cc', {k: v for k, v in mod_tones.items() if k not in game_tones})):
         for tone_id, (r, g, b) in sorted(tones.items()):
             rows.append({'id': tone_id, 'L': round(lightness(r, g, b), 1), 'rgb': '#%02x%02x%02x' % (r, g, b),
-                         'human': is_human(r, g, b), 'cc': source == 'cc'})
+                         'human': is_human(r, g, b), 'cc': source == 'cc',
+                         'archetypes': archetypes.get(tone_id, [])})
     with open(os.path.join(out, 'rsim_tones.json'), 'w', encoding='utf-8') as f:
         json.dump({'tones': rows}, f, separators=(',', ':'))
     print('official CAS parts: {}, of which above 2**32: {}'.format(len(game_parts), sum(1 for i in game_parts if i >= 1 << 32)))

@@ -16,7 +16,7 @@ with zipfile.ZipFile(out, 'w', zipfile.ZIP_STORED) as z:
         z.write(pyc, name + '.pyc')
         os.remove(pyc)
     # Data files live inside the .ts4script: CurseForge rejects .json files in Mods archives.
-    for name in ('rsim_profiles.json', 'rsim_tones.json'):
+    for name in ('rsim_profiles.json', 'rsim_tones.json', 'rsim_presets.json', 'rsim_parts.json'):
         z.write(os.path.join(ROOT, 'data', name), name)
 for name in ('rsim.cfg',):
     if os.path.exists(os.path.join(ROOT, 'data', name)):

@@ -24,7 +24,11 @@
     "_excluded_tones": "[D] yellow, orange and bright red swatches: not plausible human skin (checked on tones_sheet.png)",
     "_status": "[D]",
     "_debug_log": "Write a [step] marker before each generation step, to locate EA's freeze bug",
-    "debug_log": true
+    "debug_log": true,
+    "archetype_tone_boost": 3.0,
+    "_archetype_tone_boost": "[D] weight multiplier for skin tones EA tagged for the Sim's archetype (undertone); lightness still comes from the data",
+    "face_presets": true,
+    "_face_presets": "Apply EA face presets (eyes, nose, mouth) tagged for the Sim's archetype, drawn among every preset carrying the tag"
   },
   "hair_tags": {
     "red": [
@@ -203,7 +207,49 @@
       },
       "_source": "[S] CANDELA (Adhikari 2019, n=6,236): dark hair ~80%, red 0.6%, light eyes ~10-15%"
     },
-    "_status": "Skin: mean and SD of the CAS swatch lightness L*, calibrated by eye on tones_sheet.png on 2026-10-05 [D]: >=79 white, 73-78 light, 63-72 light brown, 45-62 medium brown, <45 dark."
+    "_status": "Skin: mean and SD of the CAS swatch lightness L*, calibrated by eye on tones_sheet.png on 2026-10-05 [D]: >=79 white, 73-78 light, 63-72 light brown, 45-62 medium brown, <45 dark.",
+    "polynesian": {
+      "skin_L": [
+        62,
+        7
+      ],
+      "hair": {
+        "dark_brown": 8,
+        "black": 92
+      },
+      "eyes": {
+        "inter": 1,
+        "brown": 99
+      },
+      "_source": "Hair and eyes [S] Sullivan 1921 (Samoa, n=93) and 1922 (Tonga, n=215), Bishop Museum Memoirs 8(2) and 8(4), visual chart observations: black hair 87-94%, no blond, brown eyes 95-100%. Skin [I]: Colmenares et al. 2013 (n=12 Native Hawaiian/Maori/Samoan, back skin) L* 3.8 below Asians in Hawaii; placed between se_asian and south_asian. Low-admixture Polynesians; Native Hawaiians today are ~30% European, ~29% East Asian (Sun et al. 2021)."
+    },
+    "native_american": {
+      "skin_L": [
+        56,
+        7
+      ],
+      "hair": {
+        "dark_brown": 15,
+        "black": 85
+      },
+      "eyes": {
+        "inter": 2,
+        "brown": 98
+      },
+      "_source": "Skin [I]: Jablonski & Chaplin 2000 (685 nm reflectance, Kaingang, Guarani, Nunoa, Aguaruna at 0.39-0.55 between Yoruba=0 and Netherlands=1) and Ruiz-Linares et al. 2014 (CANDELA 'Native' subgroups, melanin index ~40 vs 30.7 for White Brazilians). Hair and eyes [D]: no published frequency for low-admixture Indigenous Americans."
+    }
+  },
+  "group_archetypes": {
+    "european": "caucasian",
+    "mena": "middle_eastern",
+    "ssa": "african",
+    "east_asian": "asian",
+    "south_asian": "south_asian",
+    "se_asian": "asian",
+    "latin": "latin",
+    "polynesian": "island",
+    "native_american": "native_american",
+    "_status": "[D] origin group -> EA archetype tag (category 69). se_asian has no EA archetype of its own: asian."
   },
   "profiles": {
     "france": {
@@ -1496,6 +1542,15 @@
       "HairTexture_Wavy": 40,
       "HairTexture_Curly": 20
     },
-    "_status": "[D] no frequency data found; indicative split per group"
+    "polynesian": {
+      "HairTexture_Straight": 45,
+      "HairTexture_Wavy": 50,
+      "HairTexture_Curly": 5
+    },
+    "native_american": {
+      "HairTexture_Straight": 80,
+      "HairTexture_Wavy": 20
+    },
+    "_status": "[D] no frequency data found; indicative split per group; polynesian [S] Sullivan 1921/1922 (Samoa, Tonga); native_american [D]"
   }
 }

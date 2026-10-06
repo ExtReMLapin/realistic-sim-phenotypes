@@ -29,7 +29,7 @@ import terrain
 from autonomy.settings import AutonomyState
 from cas import cas
 from objects import ALL_HIDDEN_REASONS
-from protocolbuffers import Outfits_pb2
+from protocolbuffers import Outfits_pb2, PersistenceBlobs_pb2
 from sims.household_enums import HouseholdChangeOrigin
 from sims.occult.occult_enums import OccultType
 from sims.outfits.outfit_enums import BodyType
@@ -84,6 +84,9 @@ class _Data:
     tones = None
     tags = {}
     catalogs = {}
+    presets = None
+    region_keys = {}
+    part_genders = None
 
 
 def _read_config():
@@ -101,6 +104,8 @@ def _read_config():
             config['official_only'] = section.getboolean('official_only')
         if 'auto_apply' in section:
             config['auto_apply'] = section.getboolean('auto_apply')
+        if 'face_presets' in section:
+            config['face_presets'] = section.getboolean('face_presets')
     return config
 
 
@@ -124,7 +129,7 @@ def _load():
     engine = Engine(_read_json('rsim_profiles.json'))
     config = _read_config()
     engine.settings['default_profile'] = config['profile']
-    for key in ('official_only', 'auto_apply'):
+    for key in ('official_only', 'auto_apply', 'face_presets'):
         if key in config:
             engine.settings[key] = config[key]
     _Data.tones = _read_json('rsim_tones.json')['tones']
@@ -147,6 +152,29 @@ def _is_official_part(part_id):
     return part_id < 0x100000000
 
 
+# Tags of category 111 that Create-a-Sim's gender filter follows: suits masculine / feminine Sims.
+# Every hairstyle exists as a mesh for each body frame, so the internal name (ymHair_ / yfHair_) and
+# the age/gender field only say which frame the mesh fits; these tags give the style's gender.
+TAG_SUITS_MASCULINE, TAG_SUITS_FEMININE = 1529, 1530
+
+
+def _fits_gender(sim_info, part_id, tags):
+    """False for an EA part designed for the other gender, as Create-a-Sim's gender filter decides."""
+    if TAG_SUITS_MASCULINE in tags or TAG_SUITS_FEMININE in tags:
+        wanted = TAG_SUITS_FEMININE if sim_info.gender == Gender.FEMALE else TAG_SUITS_MASCULINE
+        return wanted in tags
+    # Parts without these tags (most eyebrows): the internal name (see tools/build_parts.py).
+    if _Data.part_genders is None:
+        try:
+            table = _read_json('rsim_parts.json')
+            _Data.part_genders = {Gender.MALE: frozenset(table['feminine']),
+                                  Gender.FEMALE: frozenset(table['masculine'])}
+        except Exception:
+            _log('rsim_parts.json not read:\n' + traceback.format_exc())
+            _Data.part_genders = {}
+    return part_id not in _Data.part_genders.get(sim_info.gender, ())
+
+
 def _catalog(sim_info, body_type):
     """{part_id: set(tags)} of the parts of this body type valid for the Sim's age and gender."""
     key = (int(body_type), int(sim_info.age), int(sim_info.gender))
@@ -155,12 +183,20 @@ def _catalog(sim_info, body_type):
                                                      bodytypes=[body_type], show_all_variants=True, rewards_parts=[])
         official_only = _Data.engine.settings.get('official_only', True)
         catalog = {}
+        other_gender = 0
         for part_id, value in parts.items():
             part_id = int(part_id)
             if official_only and not _is_official_part(part_id):
                 continue
-            tags = value[0] if isinstance(value, tuple) else value
-            catalog[part_id] = set(int(t) for t in tags)
+            # The catalogue also lists parts designed for the other gender, which CAS only shows once
+            # its gender filter is off (e.g. long feminine hairstyles on men).
+            tags = set(int(t) for t in (value[0] if isinstance(value, tuple) else value))
+            if not _fits_gender(sim_info, part_id, tags):
+                other_gender += 1
+                continue
+            catalog[part_id] = tags
+        _log('catalog body type {} {} {}: {} parts, {} for the other gender left out'.format(
+            int(body_type), sim_info.age.name, sim_info.gender.name, len(catalog), other_gender))
         _Data.catalogs[key] = catalog
     return _Data.catalogs[key]
 
@@ -246,11 +282,27 @@ def _set_physique(sim_info, look):
     values[PHYSIQUE_BONY] = '{:.3f}'.format(look['bony'])
     sim_info.physique = ','.join(values)
 
+    def edit(genetic):
+        if genetic.physique:
+            genetic.physique = sim_info.physique
+    _edit_genetics(sim_info, edit, 'physique')
+
+
+def _edit_genetics(sim_info, edit, what):
+    """Apply edit(GeneticData) to the Sim's genetic data, which children inherit from."""
+    try:
+        genetic = Outfits_pb2.GeneticData()
+        genetic.ParseFromString(sim_info._base.genetic_data)
+        edit(genetic)
+        sim_info._base.genetic_data = genetic.SerializeToString()
+    except Exception as exc:
+        _log('genetics not updated ({}): {!r}'.format(what, exc))
+
 
 def _usable_tones(engine):
     official_only = engine.settings.get('official_only', True)
     excluded = set(engine.settings.get('excluded_tones', ()))
-    return [(t['id'], t['L']) for t in _Data.tones
+    return [(t['id'], t['L'], t.get('archetypes', ())) for t in _Data.tones
             if t['human'] and t['id'] not in excluded and not (official_only and t['cc'])]
 
 
@@ -266,7 +318,7 @@ def apply_look(sim_info, look, rng, skin_mu=None):
     engine = _load()
     tones = _usable_tones(engine)
     mu = look['skin_mu'] if skin_mu is None else skin_mu
-    sim_info.skin_tone = engine.pick_tone(tones, mu, look['skin_sd'], rng)
+    sim_info.skin_tone = engine.pick_tone(tones, mu, look['skin_sd'], rng, archetype=look.get('archetype'))
     sim_info.skin_tone_val_shift = float(engine.settings.get('skin_val_shift', 0.0))
     _set_physique(sim_info, look)
     if sim_info.age != Age.ELDER:
@@ -286,6 +338,11 @@ def apply_look(sim_info, look, rng, skin_mu=None):
     if eyes is not None:
         _replace_part_everywhere(sim_info, BodyType.EYECOLOR, eyes)
     look['eye_part'] = eyes
+    if engine.settings.get('face_presets', True) and look.get('archetype'):
+        try:
+            look['presets'] = apply_archetype_face(sim_info, look['archetype'], rng)
+        except Exception:
+            _log('face preset error on {}:\n{}'.format(sim_info.id, traceback.format_exc()))
     return look
 
 
@@ -314,6 +371,128 @@ def apply_profile_to_household(sim_infos, profile_name, rng):
             parent_l = [l for l in parent_l if l is not None]
             apply_look(sim_info, look, rng, skin_mu=sum(parent_l) / len(parent_l) if parent_l else None)
     return list(zip(members, looks))
+
+
+# --- face presets (test) -----------------------------------------------------------------------
+
+# EA's archetype tags, with the origin group used for skin, hair and eyes.
+ARCHETYPE_ORIGINS = {
+    'asian': 'east_asian', 'african': 'ssa', 'middle_eastern': 'mena', 'south_asian': 'south_asian',
+    'latin': 'latin', 'caucasian': 'european', 'north_american': 'european', 'island': 'polynesian',
+    'native_american': 'native_american',
+}
+FACE_REGIONS = ('eyes', 'nose', 'mouth')
+MAX_DISCRIMINATING_ARCHETYPES = 3
+
+
+def _load_presets():
+    """rsim_presets.json: id, age_gender, frame, region, sculpts, modifiers, archetypes per preset."""
+    if _Data.presets is None:
+        rows = _read_json('rsim_presets.json')['presets']
+        presets = [{'id': r[0], 'age_gender': r[1], 'frame': r[2], 'region': r[3], 'sculpts': r[4],
+                    'modifiers': r[5], 'archetypes': r[6], 'human_form': bool(r[7])} for r in rows]
+        # Everything any preset of a region can set: removed from the Sim before a preset of that region is applied.
+        region_keys = {}
+        for p in presets:
+            keys = region_keys.setdefault(p['region'], (set(), set()))
+            keys[0].update(p['sculpts'])
+            keys[1].update(k for k, _ in p['modifiers'])
+        _Data.presets = presets
+        _Data.region_keys = region_keys
+    return _Data.presets
+
+
+def _face_presets(sim_info, archetype, region, strict):
+    """Presets of a region that fit the Sim's age and gender and carry the archetype tag.
+
+    strict: only presets reserved to a few archetypes (most presets carry all of them and say nothing).
+    """
+    wanted = int(sim_info.age) | int(sim_info.gender)
+    frame = _frame(sim_info)
+    return [p for p in _load_presets()
+            if p['region'] == region and p['human_form'] and archetype in p['archetypes']
+            and p['age_gender'] & wanted == wanted and p['frame'] & frame
+            and (not strict or len(p['archetypes']) <= MAX_DISCRIMINATING_ARCHETYPES)]
+
+
+def _frame(sim_info):
+    """Body frame bit (0x1000 masculine, 0x2000 feminine) of the Sim, as used by CAS presets.
+
+    Most presets suit both genders but are shaped for one frame; a preset made for the other frame
+    tears the mesh (split lips, eye corners). The frame is a gender option trait, by default the
+    Sim's gender.
+    """
+    for trait in getattr(sim_info, 'trait_tracker', ()) or ():
+        name = getattr(trait, '__name__', '').lower()
+        if 'frame' in name:
+            if 'fem' in name:
+                return 0x2000
+            if 'masc' in name:
+                return 0x1000
+    return 0x2000 if sim_info.gender == Gender.FEMALE else 0x1000
+
+
+def _apply_face_preset(sim_info, preset):
+    """Replace what the Sim has in the preset's region (sculpts and face sliders) with the preset.
+
+    Written on the Sim and in its genetic data (sculpts_and_mods_attr), so children inherit the face.
+    """
+    sim_info.facial_attributes = _edit_face_blob(sim_info.facial_attributes, preset)
+
+    def edit(genetic):
+        if genetic.sculpts_and_mods_attr:
+            genetic.sculpts_and_mods_attr = _edit_face_blob(genetic.sculpts_and_mods_attr, preset)
+    _edit_genetics(sim_info, edit, 'face')
+
+
+def _edit_face_blob(current, preset):
+    sculpt_ids, modifier_keys = _Data.region_keys[preset['region']]
+    face = PersistenceBlobs_pb2.BlobSimFacialCustomizationData()
+    if current:
+        face.MergeFromString(current if isinstance(current, bytes) else current.encode('latin-1'))
+    sculpts = [s for s in face.sculpts if s not in sculpt_ids] + list(preset['sculpts'])
+    modifiers = [(m.key, m.amount) for m in face.face_modifiers if m.key not in modifier_keys]
+    modifiers += [(k, a) for k, a in preset['modifiers']]
+    del face.sculpts[:]
+    face.sculpts.extend(sculpts)
+    del face.face_modifiers[:]
+    for key, amount in modifiers:
+        modifier = face.face_modifiers.add()
+        modifier.key = key
+        modifier.amount = amount
+    return face.SerializeToString()
+
+
+def apply_archetype_face(sim_info, archetype, rng, regions=FACE_REGIONS, strict=False):
+    """Eyes, nose and mouth drawn among EA's presets tagged for the archetype.
+
+    Not strict: presets shared by several archetypes stay in the pool, so a group keeps its variety
+    while presets reserved to other archetypes (e.g. Asian eyelids on a European) are never drawn.
+    """
+    used = []
+    for region in regions:
+        candidates = _face_presets(sim_info, archetype, region, strict)
+        if not candidates:
+            used.append('{}:none'.format(region))
+            continue
+        preset = rng.choice(candidates)
+        _apply_face_preset(sim_info, preset)
+        used.append('{}:{:#x}'.format(region, preset['id']))
+    return ' '.join(used)
+
+
+def apply_face(sim_info, face, rng):
+    """face: {'archetype', 'regions', 'strict', 'profile'}. Returns the log fields."""
+    if not _eligible(sim_info):
+        return {}
+    engine = _load()
+    origin = ARCHETYPE_ORIGINS[face['archetype']]
+    look = engine.sample(face['profile'], sim_info.age.name, sim_info.gender.name, rng, origin=origin)
+    look['archetype'] = face['archetype']
+    apply_look(sim_info, look, rng)
+    # The command forces the tested regions, by default with presets reserved to this archetype.
+    look['presets'] = apply_archetype_face(sim_info, face['archetype'], rng, face['regions'], face['strict'])
+    return look
 
 
 # --- automatic mode: every Sim the game generates ------------------------------------------------
@@ -603,10 +782,58 @@ def rsim_spawn(count: int = 35, age: str = 'adult', profile: str = 'default', _c
     return True
 
 
+@sims4.commands.Command('rsim.facepreset', command_type=sims4.commands.CommandType.Live)
+def rsim_facepreset(*args, _connection=None):
+    """rsim.facepreset [count] [archetype] [eyes|nose|mouth|all] [loose]: test of EA's archetype face presets."""
+    output = sims4.commands.CheatOutput(_connection)
+    client = services.client_manager().get(_connection)
+    active = client.active_sim if client is not None else None
+    if active is None:
+        output('rsim: no active Sim')
+        return False
+    args = [a.lower() for a in args]
+    count = 14
+    if args and args[0].isdigit():
+        count = int(args.pop(0))
+    archetype, regions, strict = 'asian', ('eyes',), True
+    for arg in args:
+        if arg in ARCHETYPE_ORIGINS:
+            archetype = arg
+        elif arg in FACE_REGIONS:
+            regions = (arg,)
+        elif arg == 'all':
+            regions = FACE_REGIONS
+        elif arg == 'loose':
+            strict = False
+        else:
+            output('rsim: unknown argument {} (archetypes: {}; regions: {}, all; loose)'.format(
+                arg, ', '.join(sorted(ARCHETYPE_ORIGINS)), ', '.join(FACE_REGIONS)))
+            return False
+    try:
+        engine = _load()
+        _load_presets()
+    except Exception as exc:
+        output('rsim: cannot read the JSON files ({!r})'.format(exc))
+        return False
+    face = {'archetype': archetype, 'regions': regions, 'strict': strict,
+            'profile': engine.settings.get('default_profile', 'europe')}
+    rng = random.Random()
+    _log('# face preset batch {}: {} Sims, archetype {}, regions {}, {}'.format(
+        time.strftime('%Y-%m-%d %H:%M:%S'), count, archetype, '+'.join(regions), 'strict' if strict else 'loose'))
+    _log('sim_id\tage\tgender\tskin_tone\tphysique\torigin\thair\ttexture\teyes\tbmi\tstatus\tpresets')
+    _Hook.suppressed += 1
+    try:
+        _spawn_batch(client, active, count, 'adult', 'vanilla', rng, services.household_manager(),
+                     services.get_zone_situation_manager(), output, face=face)
+    finally:
+        _Hook.suppressed -= 1
+    return True
+
+
 FAMILY = (Age.ADULT, Age.ADULT, Age.CHILD, Age.TEEN)
 
 
-def _spawn_batch(client, active, count, age, profile, rng, household_manager, situation_manager, output):
+def _spawn_batch(client, active, count, age, profile, rng, household_manager, situation_manager, output, face=None):
     spawned = errors = not_shown = 0
     positions = list(_grid_positions(active.position, count))
     # The automatic mode skips this mod's own source name; 'auto' uses a neutral one to go through it.
@@ -635,6 +862,14 @@ def _spawn_batch(client, active, count, age, profile, rng, household_manager, si
             except Exception:
                 errors += 1
                 _log('profile error:\n' + traceback.format_exc())
+        if face is not None:
+            for sim_info in sim_infos:
+                _debug('applying face presets to {}'.format(sim_info.id))
+                try:
+                    looks[sim_info.id] = apply_face(sim_info, face, rng)
+                except Exception:
+                    errors += 1
+                    _log('face preset error:\n' + traceback.format_exc())
         for sim_info in sim_infos:
             if not positions:
                 break
@@ -657,7 +892,10 @@ def _spawn_batch(client, active, count, age, profile, rng, household_manager, si
             _log('\t'.join(str(v) for v in (
                 sim_info.id, sim_info.age.name, sim_info.gender.name, sim_info.skin_tone, sim_info.physique,
                 look.get('origin', ''), look.get('hair', ''), look.get('hair_texture', ''), look.get('eyes', ''),
-                look.get('bmi', look.get('bmi_class', '')), 'spawned' if shown else 'NOT SPAWNED')))
+                look.get('bmi', look.get('bmi_class', '')), 'spawned' if shown else 'NOT SPAWNED',
+                look.get('presets', ''), 'hair:{:#x}'.format(look['hair_part']) if look.get('hair_part') else '')))
+    if face is not None:
+        profile = 'face presets {} {}'.format(face['archetype'], '+'.join(face['regions']))
     output('rsim: {} Sims spawned, {} not spawned, {} errors, profile {} (details in {}; rsim.clear to remove)'.format(
         spawned, not_shown, errors, profile, LOG_NAME))
     return True

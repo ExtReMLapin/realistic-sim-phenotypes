@@ -170,7 +170,8 @@ class Engine:
         if hair == 'red':
             skin_mu += float(self.settings.get('redhead_skin_shift', 4.0))
             skin_sd = min(skin_sd, 3.0)
-        result = {'origin': origin, 'hair': hair, 'eyes': eyes, 'skin_mu': skin_mu, 'skin_sd': skin_sd or sd_default}
+        result = {'origin': origin, 'hair': hair, 'eyes': eyes, 'skin_mu': skin_mu, 'skin_sd': skin_sd or sd_default,
+                  'archetype': self.archetype(source)}
         textures = self.data.get('hair_texture', {}).get(source)
         if textures:
             result['hair_texture'] = _weighted(rng, textures)
@@ -214,18 +215,31 @@ class Engine:
             if hair == 'light_brown' and rng.random() < (boost - 1.0) * 0.3:
                 hair = 'blond'
             look = {'origin': parent['origin'], 'hair': hair, 'eyes': other['eyes'],
-                    'skin_mu': parent['skin_mu'], 'skin_sd': 2.0, 'parents': adults}
+                    'skin_mu': parent['skin_mu'], 'skin_sd': 2.0, 'parents': adults,
+                    'archetype': parent.get('archetype')}
             if 'hair_texture' in parent:
                 look['hair_texture'] = parent['hair_texture']
             self._add_body(look, profile, age, gender, rng)
             looks[i] = look
         return looks
 
-    def pick_tone(self, tones, mu, sd, rng):
-        """tones: list of (id, L). Weighted pick, Gaussian weights centred on mu."""
+    def archetype(self, group):
+        """EA archetype tag matching an origin group (None when the data has no mapping)."""
+        return self.data.get('group_archetypes', {}).get(group)
+
+    def pick_tone(self, tones, mu, sd, rng, archetype=None):
+        """tones: list of (id, L, archetypes). Weighted pick, Gaussian weights centred on mu.
+
+        Lightness comes from the population data; among tones of similar lightness, those EA tagged
+        for the Sim's archetype are favoured: the tags carry the undertone (pale or golden) that L* lacks.
+        """
+        boost = float(self.settings.get('archetype_tone_boost', 1.0))
         weights = {}
-        for tone_id, lightness in tones:
+        for tone in tones:
+            tone_id, lightness = tone[0], tone[1]
             w = math.exp(-((lightness - mu) ** 2) / (2.0 * sd * sd))
+            if archetype and len(tone) > 2 and archetype in tone[2]:
+                w *= boost
             if w > 1e-6:
                 weights[str(tone_id)] = w
         if not weights:

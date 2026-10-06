@@ -6,7 +6,7 @@ A script mod for The Sims 4 that gives generated Sims (townies, NPCs, service Si
 hair colour, eye colour and body shape drawn from real population data, instead of a random pick
 from the Create-a-Sim palette.
 
-> Work in progress. Not released yet.
+> Beta, tested on game version 1.128.90. Downloads: [GitHub releases](https://github.com/ExtReMLapin/realistic-sim-phenotypes/releases).
 
 ## The problem
 
@@ -48,10 +48,14 @@ For each generated Sim it samples, in order:
 3. **Eye colour given hair colour**, from published hair x eye cross-tables, refitted to the
    country's eye colour frequencies.
 4. **Skin tone**, weighted around a target lightness for the origin group (redheads only get the
-   lightest tones).
+   lightest tones). Among tones of similar lightness, those EA tagged for the origin are favoured,
+   which gives the undertone (pale, golden).
 5. **Body shape**: a BMI drawn from NCD-RisC 2024 by country, sex and age, converted to the game's
    body sliders through a published BMI-to-silhouette scale, plus a muscle axis from Eurostat
    strength-training data.
+6. **Face shape**: eyes, nose and mouth taken from the game's own CAS face presets, among those EA
+   tagged for the origin (EA's "archetype" tags). A European Sim no longer gets eyelids made for
+   East Asian faces, and the other way round.
 
 Sims generated together (a household) share an origin, and children inherit skin, hair and eyes
 from an adult of the household. Beard and eyebrows follow the hair colour. Only EA content is used
@@ -95,16 +99,18 @@ Poland, and none at all for the Maghreb; those values are marked [D] or [I].
 profile = europe
 auto_apply = true
 official_only = true
+face_presets = true
 ```
 
 ## Console commands
 
 | Command | Effect |
 |---|---|
-| `rsim.spawn [count] [age] [profile]` | Spawns test Sims around the active Sim. Age: adult, young_adult, teen, child, elder, mix, or `family` (households of two adults and two children). Profile: a profile name, `default` (from the cfg), `vanilla` (untouched game generator) or `auto` (generated like a townie, through the automatic mode). |
+| `rsim.spawn [count] [age] [profile]` | Spawns test Sims around the active Sim. Age: adult, young_adult, teen, child, elder, `mix` (a random age per Sim, each in its own household) or `family` (households of two adults, a teen and a child, to check that children resemble their parents). Profile: a profile name, `default` (from the cfg), `vanilla` (untouched game generator) or `auto` (generated like a townie, through the automatic mode). |
 | `rsim.profiles` | Lists the profiles |
 | `rsim.freeze` | Disables autonomy on the test Sims |
 | `rsim.reroll [confirm] [profile]` | Applies the profile to generated Sims already in the save. Without `confirm` it only counts them. Played households and hand-made, premade, born or adopted Sims are never touched. |
+| `rsim.facepreset [count] [archetype] [eyes\|nose\|mouth\|all] [loose]` | Experimental. Spawns test adults with EA's face presets tagged for an archetype (asian, african, south_asian, middle_eastern, latin, caucasian, island, native_american, north_american; default asian eyes). By default only presets reserved to three archetypes or fewer are used; `loose` allows any preset carrying the tag. |
 | `rsim.clear` | Deletes the test Sims |
 
 ## Known issue in the base game
@@ -119,6 +125,10 @@ no catalogue entry passes the filter, the loop never ends. It happens without an
   lightness). Set `TS4_GAME_DIR` if needed, and point `TS4_MODS_DIR` to an empty folder so that no
   custom content ends up in the shipped table. CAS parts need no table: EA parts have 32-bit
   instance ids, while CC tools generate 64-bit ones.
+- `python tools/build_parts.py data` regenerates `rsim_parts.json` (design gender of EA parts
+  without gender tags, mostly eyebrows, read from their internal names).
+- `python tools/build_presets.py data` regenerates `rsim_presets.json` (EA's CAS face presets with their
+  archetype tags), from the game's packages only.
 - `build37.py` must run under Python 3.7 (the game's version); it writes `dist/` (`rsim.ts4script`,
   with the JSON data packed inside, and `rsim.cfg`).
 
