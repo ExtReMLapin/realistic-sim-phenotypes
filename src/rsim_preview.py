@@ -35,7 +35,7 @@ from sims.occult.occult_enums import OccultType
 from sims.outfits.outfit_enums import BodyType
 from sims.sim_info_types import Age, Gender, Species
 from sims.sim_spawner import SimCreator, SimSpawner
-from sims.sim_spawner_enums import SimInfoCreationSource
+from sims.sim_spawner_enums import SimInfoCreationSource, SimNameType
 from tag import Tag
 
 from rsim_engine import Engine
@@ -111,6 +111,8 @@ def _read_config():
             config['auto_apply'] = section.getboolean('auto_apply')
         if 'face_presets' in section:
             config['face_presets'] = section.getboolean('face_presets')
+        if 'names' in section:
+            config['names'] = section.getboolean('names')
     return config
 
 
@@ -134,7 +136,7 @@ def _load():
     engine = Engine(_read_json('rsim_profiles.json'))
     config = _read_config()
     engine.settings['default_profile'] = config['profile']
-    for key in ('official_only', 'auto_apply', 'face_presets'):
+    for key in ('official_only', 'auto_apply', 'face_presets', 'names'):
         if key in config:
             engine.settings[key] = config[key]
     _Data.tones = _read_json('rsim_tones.json')['tones']
@@ -424,6 +426,50 @@ def apply_profile(sim_info, profile_name, rng):
     return apply_look(sim_info, look, rng)
 
 
+def _has_set_name(creator):
+    return bool(getattr(creator, 'first_name', '') or getattr(creator, 'last_name', '')
+                and getattr(creator, 'last_name', '') not in (LAST_NAME,) + LEGACY_LAST_NAMES
+                or getattr(creator, 'first_name_key', 0) or getattr(creator, 'last_name_key', 0)
+                or getattr(creator, 'full_name_key', 0))
+
+
+def _name_type(name):
+    try:
+        return SimNameType[name]
+    except Exception:
+        _log('unknown name list {}'.format(name))
+        return None
+
+
+def rename_household(pairs, rng, keep_last_name=False):
+    """Names from EA's list for the household's origin (one last name for the whole household).
+
+    pairs: (sim_info, look). Origins without an EA list (European, sub-Saharan African, mixed Sims)
+    keep the names the game gave them, in the game's language.
+    """
+    if not _load().settings.get('names', True):
+        return
+    language = SimSpawner._get_language_for_locale(services.get_locale())
+    family = {}
+    for sim_info, look in pairs:
+        name = look.get('name_type')
+        name_type = _name_type(name) if name else None
+        if name_type is None:
+            continue
+        try:
+            sim_info.first_name = SimSpawner.get_random_first_name(sim_info.gender, sim_info.species,
+                                                                   sim_name_type_override=name_type)
+            if keep_last_name:
+                continue
+            if name not in family:
+                family[name] = SimSpawner._get_random_last_name(language, sim_name_type=name_type)
+            last = SimSpawner._get_family_name_for_gender(language, family[name], sim_info.gender == Gender.FEMALE,
+                                                          sim_name_type=name_type)
+            sim_info.last_name = last if last is not None else family[name]
+        except Exception:
+            _log('rename error on {}:\n{}'.format(sim_info.id, traceback.format_exc()))
+
+
 def apply_profile_to_household(sim_infos, profile_name, rng):
     """Apply a profile to Sims generated together: shared origin, children resembling an adult."""
     engine = _load()
@@ -604,7 +650,12 @@ def _after_create(sim_creators, sim_infos, creation_source):
     creators = list(sim_creators or ())
     generated = [s for i, s in enumerate(sim_infos)
                  if i >= len(creators) or getattr(creators[i], 'resource_key', None) is None]
-    applied = apply_profile_to_household(generated, profile, random.Random())
+    rng = random.Random()
+    applied = apply_profile_to_household(generated, profile, rng)
+    # Sims whose creator set a name (story characters, named templates) keep it.
+    named = {sim_infos[i].id for i, c in enumerate(creators) if i < len(sim_infos) and _has_set_name(c)}
+    rename_household([(s, look) for s, look in applied if s.id not in named], rng,
+                     keep_last_name=source.startswith('rsim_test'))
     _debug('auto: profile {} applied to {} of {} Sims ({})'.format(profile, len(applied), len(sim_infos), source))
 
 
@@ -940,7 +991,9 @@ def _spawn_batch(client, active, count, age, profile, rng, household_manager, si
         if profile not in ('vanilla', 'auto'):
             _debug('applying profile {} to {} Sim(s)'.format(profile, len(sim_infos)))
             try:
-                looks = {s.id: look for s, look in apply_profile_to_household(sim_infos, profile, rng)}
+                applied = apply_profile_to_household(sim_infos, profile, rng)
+                rename_household(applied, rng, keep_last_name=True)
+                looks = {s.id: look for s, look in applied}
             except Exception:
                 errors += 1
                 _log('profile error:\n' + traceback.format_exc())
@@ -949,6 +1002,7 @@ def _spawn_batch(client, active, count, age, profile, rng, household_manager, si
                 _debug('applying face presets to {}'.format(sim_info.id))
                 try:
                     looks[sim_info.id] = apply_face(sim_info, face, rng)
+                    rename_household([(sim_info, looks[sim_info.id])], rng, keep_last_name=True)
                 except Exception:
                     errors += 1
                     _log('face preset error:\n' + traceback.format_exc())

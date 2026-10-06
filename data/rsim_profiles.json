@@ -39,7 +39,9 @@
       "blue": 4.0,
       "inter": 2.0
     },
-    "_admixed_light_eyes_skin_shift": "[D] skin L* added for light eyes in admixed groups (latin, mixed origins), as for light hair"
+    "_admixed_light_eyes_skin_shift": "[D] skin L* added for light eyes in admixed groups (latin, mixed origins), as for light hair",
+    "names": true,
+    "_names": "Give generated Sims first and last names from EA's name list for their origin (households share one last name)"
   },
   "hair_tags": {
     "red": [
@@ -262,6 +264,16 @@
     "polynesian": "island",
     "native_american": "native_american",
     "_status": "[D] origin group -> EA archetype tag (category 69). se_asian has no EA archetype of its own: asian."
+  },
+  "group_name_types": {
+    "east_asian": "Chinese",
+    "south_asian": "Indian",
+    "mena": "Moroccan",
+    "latin": "Latin",
+    "polynesian": "Islander",
+    "se_asian": "SoutheastAsian",
+    "native_american": "NativeAmerican",
+    "_status": "[D] origin group -> EA name list (SimNameType). European and sub-Saharan African Sims, and mixed Sims, keep the names of the game's language; profiles can override (name_types)."
   },
   "profiles": {
     "france": {
@@ -1559,6 +1571,9 @@
           3.1
         ],
         "_source": "[S] NCD-RisC 2026 children and adolescents, 2024, means of ages 5-9 (child) and 10-19 (teen): overweight >+1SD, obesity >+2SD, thinness <-2SD"
+      },
+      "name_types": {
+        "east_asian": "Japanese"
       }
     },
     "china": {
@@ -1749,6 +1764,10 @@
           2.7
         ],
         "_source": "[S] NCD-RisC 2026 children and adolescents, 2024, means of ages 5-9 (child) and 10-19 (teen): overweight >+1SD, obesity >+2SD, thinness <-2SD"
+      },
+      "name_types": {
+        "east_asian": null,
+        "_note": "EA has no Korean name list: the names of the game language are kept"
       }
     },
     "india": {
@@ -1850,6 +1869,9 @@
           22.4
         ],
         "_source": "[S] NCD-RisC 2026 children and adolescents, 2024, means of ages 5-9 (child) and 10-19 (teen): overweight >+1SD, obesity >+2SD, thinness <-2SD"
+      },
+      "name_types": {
+        "east_asian": "Indian"
       }
     }
   },

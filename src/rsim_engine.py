@@ -201,7 +201,7 @@ class Engine:
             skin_mu += float(self.settings.get('redhead_skin_shift', 4.0))
             skin_sd = min(skin_sd, 3.0)
         result = {'origin': origin, 'hair': hair, 'eyes': eyes, 'skin_mu': skin_mu, 'skin_sd': skin_sd or sd_default,
-                  'archetype': self.archetype(source)}
+                  'archetype': self.archetype(source), 'name_type': self.name_type(origin, profile)}
         if source != 'european' and self._group(source, profile).get('face_exclude'):
             result['face_exclude'] = self._group(source, profile)['face_exclude']
         drawn = [t for t in (self._texture(p, profile, rng) for p in (parents or [source])) if t]
@@ -253,12 +253,19 @@ class Engine:
                 hair = 'blond'
             look = {'origin': parent['origin'], 'hair': hair, 'eyes': other['eyes'],
                     'skin_mu': parent['skin_mu'], 'skin_sd': 2.0, 'parents': adults,
-                    'archetype': parent.get('archetype')}
+                    'archetype': parent.get('archetype'), 'name_type': parent.get('name_type')}
             if 'hair_texture' in parent:
                 look['hair_texture'] = parent['hair_texture']
             self._add_body(look, profile, age, gender, rng)
             looks[i] = look
         return looks
+
+    def name_type(self, origin, profile):
+        """EA name list (SimNameType name) for an origin, or None to keep the game's language names."""
+        overrides = profile.get('name_types', {})
+        if origin in overrides:
+            return overrides[origin]
+        return self.data.get('group_name_types', {}).get(origin)
 
     def archetype(self, group):
         """EA archetype tag matching an origin group (None when the data has no mapping)."""

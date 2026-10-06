@@ -151,9 +151,18 @@ removed from the Sim, so presets do not pile up.
 - **Elders.** An elder the game gave grey or white hair keeps that shade, in a hairstyle fitting
   their origin; an elder the game gave a colour (or grey mixed with a fantasy colour) gets a natural
   colour from their origin. Beard and eyebrows follow.
+- **Names.** EA has name lists for some origins (SimNameType: Japanese, Chinese, Indian, Moroccan,
+  Latin, Islander, Southeast Asian, Native American). Generated Sims of these origins get a first
+  name from their list and the household one last name (`names` in the cfg); European, sub-Saharan
+  African, Korean and mixed Sims keep the names of the game's language, as EA has no list for them.
+  Sims whose name the game sets on purpose (story characters, named templates) are not renamed, and
+  `rsim.reroll` never renames.
 - **Known limits.** EA files a few tightly curled styles under "curly", so a European or South Asian
   Sim drawn with curly hair may get one. Children draw face presets from their archetype instead of
   inheriting their parents' (EA has separate child presets with no link to the adult ones).
+  Some EA worlds ask for their own name list (Mt. Komorebi, Sulani, Tomarang...); the mod's look
+  follows the cfg profile, not the world, so with a European profile a townie generated there can
+  get a European look and a name from that world's list.
 
 ## 3. Where the numbers come from
 

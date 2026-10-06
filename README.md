@@ -125,6 +125,7 @@ profile = europe
 auto_apply = true
 official_only = true
 face_presets = true
+names = true
 ```
 
 ## Console commands
