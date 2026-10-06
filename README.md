@@ -39,6 +39,29 @@ extremely rare in real populations, all from the unmodded generator:
 See [docs/METHODOLOGY.md](docs/METHODOLOGY.md) for how the game generates Sims and how the
 profiles were built.
 
+## The game vs this mod
+
+| | The game's generator | With this mod |
+|---|---|---|
+| Origin | None: every trait is drawn on its own | Drawn from census data for the chosen country, shared by a household |
+| Skin tone | Any tone of the palette, about 1 pick in 8 is light | Lightness from population data, undertone from the tones EA tagged for the origin |
+| Hair colour | Drawn without regard to skin or origin (blond and red hair on dark skin) | Measured frequencies for the origin |
+| Eye colour | Drawn without regard to skin, hair or origin (green eyes on dark skin) | Linked to hair colour as in real populations (hair x eye tables) |
+| Face shape | Eyes, nose and mouth presets drawn without regard to origin, although EA tagged them by origin | EA's own presets for the Sim's origin, fitting their age, gender and body frame |
+| Hairstyle | Drawn without regard to origin | Afro-textured styles for African and Latin American Sims; hair form drawn per origin |
+| Body shape | Narrow bell curve around "average", unrelated to any population | BMI by country, sex and age (NCD-RisC), muscle from survey data |
+
+The game even contains a tag randomizer meant to keep the origin consistent between skin, face, hair
+and eyes, but its townie generator only uses it for outfits (see the methodology).
+
+The mod also makes sure that:
+
+- hairstyles, beards and eyebrows suit the Sim's gender, as Create-a-Sim's gender filter does;
+- beard and eyebrows have the exact shade of the hair;
+- mixed Sims follow the rules of inheritance (light hair and eyes are recessive);
+- children look like their parents, and babies of generated Sims inherit their look;
+- elders keep grey hair in a style that fits their origin.
+
 ## What the mod does
 
 For each generated Sim it samples, in order:
