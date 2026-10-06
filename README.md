@@ -3,8 +3,8 @@
 # Realistic Sim Phenotypes
 
 A script mod for The Sims 4 that gives generated Sims (townies, NPCs, service Sims) a skin tone,
-hair colour, eye colour and body shape drawn from real population data, instead of a random pick
-from the Create-a-Sim palette.
+hair colour, eye colour, face shape, body shape and name that fit an origin drawn from real
+population data, instead of a random pick from the Create-a-Sim palette.
 
 > Beta, tested on game version 1.128.90. Downloads: [GitHub releases](https://github.com/ExtReMLapin/realistic-sim-phenotypes/releases).
 
@@ -79,6 +79,9 @@ For each generated Sim it samples, in order:
 6. **Face shape**: eyes, nose and mouth taken from the game's own CAS face presets, among those EA
    tagged for the origin (EA's "archetype" tags). A European Sim no longer gets eyelids made for
    East Asian faces, and the other way round.
+7. **Name**: for origins EA has a name list for (Japanese, Chinese, Indian, Moroccan, Latin,
+   Islander, Southeast Asian, Native American), a first name from that list and one last name per
+   household. Other Sims keep the names the game gives them, in its language.
 
 Sims generated together (a household) share an origin, and children inherit skin, hair and eyes
 from an adult of the household. Beard and eyebrows follow the hair colour. Only EA content is used
