@@ -6,6 +6,8 @@ import math
 
 HAIR = ('red', 'blond', 'light_brown', 'dark_brown', 'black')
 EYES = ('blue', 'inter', 'brown')
+# Hair form, from least to most curly: the curlier parent's form shows in a mixed Sim.
+TEXTURES = ('HairTexture_Straight', 'HairTexture_Wavy', 'HairTexture_Curly', 'HairTexture_Afro')
 YOUTH_AGES = ('CHILD', 'TEEN')
 UNDER_30 = ('CHILD', 'TEEN', 'YOUNGADULT')
 
@@ -60,8 +62,9 @@ class Engine:
     def _origin(self, profile, age, rng):
         weights = {k: float(v) for k, v in profile['origins'].items() if not k.startswith('_')}
         if age in UNDER_30:
-            boost = float(self.settings.get('minority_boost_under_30', 1.0))
-            weights = {k: (v if k == 'european' else v * boost) for k, v in weights.items()}
+            boost = float(profile.get('minority_boost_under_30', self.settings.get('minority_boost_under_30', 1.0)))
+            majority = profile.get('majority', 'european')
+            weights = {k: (v if k == majority else v * boost) for k, v in weights.items()}
         return _weighted(rng, weights)
 
     # --- hair and eyes -----------------------------------------------------------------
@@ -90,13 +93,35 @@ class Engine:
         eyes = _weighted(rng, dict(zip(EYES, row)))
         return hair, eyes
 
+    def _traits(self, source, profile_name, profile, age, gender, rng):
+        if source == 'european':
+            return self._european_traits(*self._european(profile_name, profile), age, gender, rng)
+        return self._group_traits(self._group(source, profile), age, rng)
+
     def _group_traits(self, group, age, rng):
         hair = _weighted(rng, self._hair_weights(group['hair'], age))
         eyes = _weighted(rng, group['eyes'])
         return hair, eyes
 
-    def _group(self, name):
-        return self.data['groups'][name]
+    def _group(self, name, profile=None):
+        """An origin group, with the profile's own values for that country when it has some."""
+        group = self.data['groups'][name]
+        override = (profile or {}).get('group_overrides', {}).get(name)
+        if override:
+            group = dict(group, **{k: v for k, v in override.items() if not k.startswith('_')})
+        return group
+
+    def _european(self, profile_name, profile):
+        """(profile name, European block): a profile without its own block (non-European country)
+        uses the population-weighted European one."""
+        if 'european' in profile:
+            return profile_name, profile['european']
+        return 'europe', self.data['profiles']['europe']['european']
+
+    def _skin(self, origin, profile_name, profile):
+        if origin == 'european':
+            return self._european(profile_name, profile)[1]['skin_L']
+        return self._group(origin, profile)['skin_L']
 
     # --- body shape ----------------------------------------------------------------------
     def _bmi(self, profile, age, gender, rng):
@@ -149,34 +174,46 @@ class Engine:
         if origin is None:
             origin = self._origin(profile, age, rng)
         sd_default = float(self.settings.get('skin_sd_default', 5.0))
+        majority = profile.get('majority', 'european')
+        parents = None
         if origin == 'mixed':
-            others = {k: v for k, v in profile['origins'].items() if not k.startswith('_') and k not in ('european', 'mixed')}
+            # One parent from the majority, the other from one of the minorities.
+            others = {k: v for k, v in profile['origins'].items() if not k.startswith('_') and k not in (majority, 'mixed')}
             other = _weighted(rng, others)
-            parents = ['european', other]
+            parents = [majority, other]
             source = parents[int(rng.random() * 2)]
-            mu_eu = profile['european']['skin_L'][0]
-            mu_other = self._group(other)['skin_L'][0]
-            skin_mu, skin_sd = (mu_eu + mu_other) / 2.0, 8.0
+            mu_a = self._skin(majority, profile_name, profile)[0]
+            mu_b = self._skin(other, profile_name, profile)[0]
+            skin_mu, skin_sd = (mu_a + mu_b) / 2.0, 8.0
+            # Light hair and eyes are recessive: draw them for both parents, the darker one shows.
+            traits = [self._traits(p, profile_name, profile, age, gender, rng) for p in parents]
+            hair = max((t[0] for t in traits), key=HAIR.index)
+            eyes = max((t[1] for t in traits), key=EYES.index)
         else:
             source = origin
-            if origin == 'european':
-                skin_mu, skin_sd = profile['european']['skin_L']
-            else:
-                skin_mu, skin_sd = self._group(origin)['skin_L']
-        if source == 'european':
-            hair, eyes = self._european_traits(profile_name, profile['european'], age, gender, rng)
-        else:
-            hair, eyes = self._group_traits(self._group(source), age, rng)
+            skin_mu, skin_sd = self._skin(origin, profile_name, profile)
+            hair, eyes = self._traits(source, profile_name, profile, age, gender, rng)
+        if origin == 'mixed' or (source != 'european' and self._group(source, profile).get('admixed')):
+            # In admixed populations light hair and eyes come with European ancestry, hence lighter skin.
+            skin_mu += float(self.settings.get('admixed_light_hair_skin_shift', {}).get(hair, 0.0))
+            skin_mu += float(self.settings.get('admixed_light_eyes_skin_shift', {}).get(eyes, 0.0))
         if hair == 'red':
             skin_mu += float(self.settings.get('redhead_skin_shift', 4.0))
             skin_sd = min(skin_sd, 3.0)
         result = {'origin': origin, 'hair': hair, 'eyes': eyes, 'skin_mu': skin_mu, 'skin_sd': skin_sd or sd_default,
                   'archetype': self.archetype(source)}
-        textures = self.data.get('hair_texture', {}).get(source)
-        if textures:
-            result['hair_texture'] = _weighted(rng, textures)
+        if source != 'european' and self._group(source, profile).get('face_exclude'):
+            result['face_exclude'] = self._group(source, profile)['face_exclude']
+        drawn = [t for t in (self._texture(p, profile, rng) for p in (parents or [source])) if t]
+        if drawn:
+            result['hair_texture'] = max(drawn, key=lambda t: TEXTURES.index(t) if t in TEXTURES else -1)
         self._add_body(result, profile, age, gender, rng)
         return result
+
+    def _texture(self, source, profile, rng):
+        textures = self._group(source, profile).get('hair_texture') if source != 'european' else None
+        textures = textures or self.data.get('hair_texture', {}).get(source)
+        return _weighted(rng, textures) if textures else None
 
     def _add_body(self, result, profile, age, gender, rng):
         if age in YOUTH_AGES:

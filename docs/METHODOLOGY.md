@@ -111,8 +111,8 @@ used anywhere:
 | Trait | How it is set | Game API |
 |---|---|---|
 | Skin tone | Tone picked with Gaussian weights around a target swatch lightness for the origin group | `sim_info.skin_tone` |
-| Hair colour | Official hair part carrying the colour tag (`HairColor_*`), same length when possible, texture drawn per group | outfits + genetics |
-| Beard, eyebrows | Same colour tag as the hair, only if the Sim already has one | outfits + genetics |
+| Hair colour | Official hair part carrying the colour tag (`HairColor_*`), same length when possible, texture drawn per group, the Sim's archetype tag preferred | outfits + genetics |
+| Beard, eyebrows | The exact shade of the new hairstyle (any `HairColor_*` tag), only if the Sim already has a coloured one | outfits + genetics |
 | Eye colour | Official part carrying the eye colour tag (`EyeColor_*`) | outfits + genetics |
 | Skin undertone | Among tones of similar lightness, tones EA tagged for the Sim's archetype weigh 3x more | `sim_info.skin_tone` |
 | Face shape | Eyes, nose and mouth: one EA face preset per region, drawn among the presets tagged for the Sim's archetype (`face_presets` in the cfg) | `sim_info.facial_attributes` + genetics |
@@ -138,6 +138,23 @@ A preset is only drawn when it fits the Sim on three counts, each of which break
 Before a preset is applied, every sculpt and slider that any preset of that region can set is
 removed from the Sim, so presets do not pile up.
 
+### Consistency rules
+
+- **Hair texture.** EA has four hair texture tags: straight, wavy, curly and afro (afros, braids,
+  locs). Afro-textured styles are only given to Sims whose origin group draws that texture
+  (sub-Saharan African 75%, Latin American 7% [D]); the other groups never get them.
+- **Mixed Sims.** Hair colour and eye colour are drawn for both parents and the darker one shows,
+  since light hair and light eyes are recessive; the hair form is the curlier of the two. In
+  admixed groups (Latin American, mixed), light hair and light eyes come with a lighter skin
+  (+8 L* for blond or red hair, +4 for light brown, +4 for blue eyes, +2 for intermediate [D]), as
+  they follow European ancestry (Ruiz-Linares et al. 2014).
+- **Elders.** An elder the game gave grey or white hair keeps that shade, in a hairstyle fitting
+  their origin; an elder the game gave a colour (or grey mixed with a fantasy colour) gets a natural
+  colour from their origin. Beard and eyebrows follow.
+- **Known limits.** EA files a few tightly curled styles under "curly", so a European or South Asian
+  Sim drawn with curly hair may get one. Children draw face presets from their archetype instead of
+  inheriting their parents' (EA has separate child presets with no link to the adult ones).
+
 ## 3. Where the numbers come from
 
 The profiles were built from a literature and statistics review. Every block of
@@ -157,6 +174,31 @@ Minorities are younger than average, so the share of non-European origins is rai
 of 1.6 for Sims under 30 [D].
 
 The `europe` profile is the population-weighted average of the eight European profiles.
+
+### Asian profiles
+
+`japan`, `china`, `korea` and `india` declare their own majority group (East Asian, or South Asian
+for India). Minorities come from official counts: foreign residents by nationality in Japan
+(Immigration Services Agency, 2025) and South Korea (2025 register-based census), the 2020 census
+in China, where the Uyghur, Kazakh, Kyrgyz, Tajik, Uzbek, Tatar and Russian minorities (0.97%) are
+drawn as East Asian x European mixed [I]. India has no ethnicity census: about 1.3% of Indians
+(Northeast Indian tribes, Meitei, Nepali and Tibetan speakers, Census 2011) are given East Asian
+features [I]. The boost for minorities under 30 is not applied to these profiles.
+
+BMI comes from the same NCD-RisC 2026 files as the European profiles (2024 estimates), averaged
+over ages 20-29, 30-59 and 60-84, and over ages 5-9 and 10-19 for children and teens. As a check,
+the model gives Chinese adults a mean BMI of 24.4, the value measured by the China Chronic Disease
+and Risk Factor Surveillance in 2018 (Wang et al. 2021, n = 645,223).
+
+Strength training is only measured nationally in South Korea (KNHANES 2019: men 32.6%, women
+14.1%, Sung et al. 2022). Japan uses a local study (Hisayama, ages 40+, 3.8%) [I], China a
+convenience sample [I] and India a design value [D].
+
+No published frequency of hair or eye colour exists for these four countries; East Asian and
+South Asian Sims keep the group values. For India, skin is set wider and lighter than the
+diaspora-based South Asian group, from Norton 2019 (Toronto, South Asians at 0.44 of the way from
+Europeans to African Americans on the same meter) and the range measured in West Maharashtra
+(Jonnalagadda et al. 2019) [I]; no South Indian measurement could be verified.
 
 ### Hair and eye colour
 

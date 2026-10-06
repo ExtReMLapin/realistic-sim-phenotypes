@@ -28,7 +28,18 @@
     "archetype_tone_boost": 3.0,
     "_archetype_tone_boost": "[D] weight multiplier for skin tones EA tagged for the Sim's archetype (undertone); lightness still comes from the data",
     "face_presets": true,
-    "_face_presets": "Apply EA face presets (eyes, nose, mouth) tagged for the Sim's archetype, drawn among every preset carrying the tag"
+    "_face_presets": "Apply EA face presets (eyes, nose, mouth) tagged for the Sim's archetype, drawn among every preset carrying the tag",
+    "admixed_light_hair_skin_shift": {
+      "blond": 8.0,
+      "red": 8.0,
+      "light_brown": 4.0
+    },
+    "_admixed_light_hair_skin_shift": "[D] skin L* added for light hair in admixed groups (latin, mixed origins): light hair comes with European ancestry (Ruiz-Linares et al. 2014, CANDELA)",
+    "admixed_light_eyes_skin_shift": {
+      "blue": 4.0,
+      "inter": 2.0
+    },
+    "_admixed_light_eyes_skin_shift": "[D] skin L* added for light eyes in admixed groups (latin, mixed origins), as for light hair"
   },
   "hair_tags": {
     "red": [
@@ -205,7 +216,8 @@
         "inter": 10,
         "brown": 85
       },
-      "_source": "[S] CANDELA (Adhikari 2019, n=6,236): dark hair ~80%, red 0.6%, light eyes ~10-15%"
+      "_source": "[S] CANDELA (Adhikari 2019, n=6,236): dark hair ~80%, red 0.6%, light eyes ~10-15%",
+      "admixed": true
     },
     "_status": "Skin: mean and SD of the CAS swatch lightness L*, calibrated by eye on tones_sheet.png on 2026-10-05 [D]: >=79 white, 73-78 light, 63-72 light brown, 45-62 medium brown, <45 dark.",
     "polynesian": {
@@ -1451,6 +1463,394 @@
         "p": 0.21,
         "_source": "[I] population-weighted average (UK uses the EU mean)"
       }
+    },
+    "japan": {
+      "label": "Japan",
+      "majority": "east_asian",
+      "minority_boost_under_30": 1.0,
+      "origins": {
+        "east_asian": 97.4,
+        "se_asian": 1.23,
+        "south_asian": 0.36,
+        "latin": 0.21,
+        "european": 0.25,
+        "ssa": 0.03,
+        "mixed": 0.5,
+        "_source": "[S] Statistics Bureau of Japan, population 1 Oct 2024 (123,802 thousand); Immigration Services Agency, foreign residents end of June 2025 (3,956,619) by nationality: China, Korea, Taiwan -> east_asian; Vietnam, Philippines, Indonesia, Myanmar -> se_asian; Nepal, Sri Lanka -> south_asian; Brazil -> latin [I] (many are of Japanese descent). The 0.5% of other nationalities split [D]; mixed 0.5 [D] (no data)."
+      },
+      "muscle": {
+        "p": 0.05,
+        "_source": "[I] Honda et al. 2024 (Hisayama Study, ages 40+): 3.8% do muscle strengthening >= 2 days/week; no national figure"
+      },
+      "bmi": {
+        "F": {
+          "YOUNGADULT": [
+            25.4,
+            65.7,
+            6.3,
+            1.7,
+            0.7,
+            0.2
+          ],
+          "ADULT": [
+            14.8,
+            68.8,
+            12.2,
+            3.1,
+            0.9,
+            0.3
+          ],
+          "ELDER": [
+            7.7,
+            65.8,
+            22.5,
+            3.5,
+            0.4,
+            0.1
+          ]
+        },
+        "M": {
+          "YOUNGADULT": [
+            9.9,
+            65.5,
+            16.2,
+            6.3,
+            1.3,
+            0.8
+          ],
+          "ADULT": [
+            3.1,
+            58.4,
+            29.3,
+            7.4,
+            1.4,
+            0.5
+          ],
+          "ELDER": [
+            3.2,
+            64.1,
+            29.1,
+            3.2,
+            0.3,
+            0.1
+          ]
+        },
+        "_source": "[S] NCD-RisC 2026 (2024 estimates), means of 20-29 / 30-59 / 60-84 age bands; classes <18.5 / 18.5-25 / 25-30 / 30-35 / 35-40 / >=40"
+      },
+      "youth": {
+        "CHILD_F": [
+          16.8,
+          3.6,
+          1.2
+        ],
+        "CHILD_M": [
+          22.1,
+          7.6,
+          1.9
+        ],
+        "TEEN_F": [
+          14.1,
+          2.6,
+          1.5
+        ],
+        "TEEN_M": [
+          19.2,
+          5.9,
+          3.1
+        ],
+        "_source": "[S] NCD-RisC 2026 children and adolescents, 2024, means of ages 5-9 (child) and 10-19 (teen): overweight >+1SD, obesity >+2SD, thinness <-2SD"
+      }
+    },
+    "china": {
+      "label": "China",
+      "majority": "east_asian",
+      "minority_boost_under_30": 1.0,
+      "origins": {
+        "east_asian": 99.0,
+        "mixed": 0.97,
+        "european": 0.03,
+        "_source": "[S] 2020 census: Han 91.11%; minorities of East Asian appearance counted with them. Uyghur, Kazakh, Kyrgyz, Tajik, Uzbek, Tatar and Russian 0.97% (census yearbook table 2-1) drawn as East Asian x European mixed [I] (Uyghur ancestry about 60% West Eurasian, Xu et al. 2008)."
+      },
+      "muscle": {
+        "p": 0.15,
+        "_source": "[I] Lin & Yan 2020 (Hubei parents, convenience sample): 28.5% muscle strengthening; scaled down [D], no national figure"
+      },
+      "bmi": {
+        "F": {
+          "YOUNGADULT": [
+            12.4,
+            66.5,
+            14.1,
+            5.1,
+            1.2,
+            0.7
+          ],
+          "ADULT": [
+            3.3,
+            58.9,
+            28.4,
+            7.1,
+            1.2,
+            1.0
+          ],
+          "ELDER": [
+            3.9,
+            55.7,
+            32.2,
+            6.6,
+            0.9,
+            0.6
+          ]
+        },
+        "M": {
+          "YOUNGADULT": [
+            4.7,
+            54.3,
+            29.7,
+            7.9,
+            1.9,
+            1.5
+          ],
+          "ADULT": [
+            1.6,
+            48.0,
+            39.6,
+            8.3,
+            1.3,
+            1.2
+          ],
+          "ELDER": [
+            4.2,
+            60.4,
+            30.7,
+            3.8,
+            0.4,
+            0.5
+          ]
+        },
+        "_source": "[S] NCD-RisC 2026 (2024 estimates), means of 20-29 / 30-59 / 60-84 age bands; classes <18.5 / 18.5-25 / 25-30 / 30-35 / 35-40 / >=40"
+      },
+      "youth": {
+        "CHILD_F": [
+          24.8,
+          11.2,
+          3.1
+        ],
+        "CHILD_M": [
+          33.6,
+          21.7,
+          2.9
+        ],
+        "TEEN_F": [
+          18.9,
+          6.2,
+          3.5
+        ],
+        "TEEN_M": [
+          26.2,
+          14.4,
+          4.7
+        ],
+        "_source": "[S] NCD-RisC 2026 children and adolescents, 2024, means of ages 5-9 (child) and 10-19 (teen): overweight >+1SD, obesity >+2SD, thinness <-2SD"
+      }
+    },
+    "korea": {
+      "label": "South Korea",
+      "majority": "east_asian",
+      "minority_boost_under_30": 1.0,
+      "origins": {
+        "east_asian": 97.1,
+        "se_asian": 1.62,
+        "south_asian": 0.35,
+        "european": 0.35,
+        "latin": 0.05,
+        "ssa": 0.05,
+        "mixed": 0.5,
+        "_source": "[S] 2025 register-based census: 51.82 million, 2.11 million foreigners (4.1%); ethnic Koreans of Chinese nationality 25.3%, Vietnamese 15.1%, Chinese 10.5%, Thai 7.5% of foreigners. The other 41.6% of foreigners split [D]; mixed 0.5 [D]."
+      },
+      "muscle": {
+        "p": 0.25,
+        "_source": "[S] Sung et al. 2022, KNHANES 2019: muscle strengthening >= 2 days/week, men 32.6%, women 14.1%"
+      },
+      "bmi": {
+        "F": {
+          "YOUNGADULT": [
+            15.9,
+            66.1,
+            12.2,
+            4.1,
+            1.4,
+            0.4
+          ],
+          "ADULT": [
+            6.3,
+            68.5,
+            19.1,
+            4.8,
+            1.0,
+            0.2
+          ],
+          "ELDER": [
+            2.2,
+            56.5,
+            35.0,
+            5.7,
+            0.6,
+            0.1
+          ]
+        },
+        "M": {
+          "YOUNGADULT": [
+            3.7,
+            51.2,
+            31.0,
+            10.3,
+            3.2,
+            0.5
+          ],
+          "ADULT": [
+            1.5,
+            46.9,
+            41.0,
+            8.8,
+            1.6,
+            0.2
+          ],
+          "ELDER": [
+            2.9,
+            60.2,
+            33.7,
+            3.0,
+            0.2,
+            0.0
+          ]
+        },
+        "_source": "[S] NCD-RisC 2026 (2024 estimates), means of 20-29 / 30-59 / 60-84 age bands; classes <18.5 / 18.5-25 / 25-30 / 30-35 / 35-40 / >=40"
+      },
+      "youth": {
+        "CHILD_F": [
+          28.4,
+          9.1,
+          1.1
+        ],
+        "CHILD_M": [
+          46.6,
+          23.3,
+          1.6
+        ],
+        "TEEN_F": [
+          22.6,
+          5.4,
+          1.6
+        ],
+        "TEEN_M": [
+          43.3,
+          17.8,
+          2.7
+        ],
+        "_source": "[S] NCD-RisC 2026 children and adolescents, 2024, means of ages 5-9 (child) and 10-19 (teen): overweight >+1SD, obesity >+2SD, thinness <-2SD"
+      }
+    },
+    "india": {
+      "label": "India",
+      "majority": "south_asian",
+      "minority_boost_under_30": 1.0,
+      "origins": {
+        "south_asian": 98.7,
+        "east_asian": 1.3,
+        "_source": "[I] No ethnicity census. Northeast India Scheduled Tribes (12.7 M), Meitei (1.8 M), Nepali (2.9 M) and Tibetan speakers (Census 2011): about 1.2-1.5% with East Asian features."
+      },
+      "group_overrides": {
+        "south_asian": {
+          "skin_L": [
+            55,
+            9
+          ],
+          "_source": "[I] Norton 2019 (Toronto, same meter): South Asian melanin index between European and African American at 0.44; West Maharashtra 0.28-0.85 (Jonnalagadda 2019): wide spread for India's regional variation"
+        }
+      },
+      "muscle": {
+        "p": 0.05,
+        "_source": "[D] no published data"
+      },
+      "bmi": {
+        "F": {
+          "YOUNGADULT": [
+            19.4,
+            57.9,
+            16.7,
+            4.6,
+            0.9,
+            0.4
+          ],
+          "ADULT": [
+            8.4,
+            50.5,
+            28.0,
+            10.0,
+            2.5,
+            0.7
+          ],
+          "ELDER": [
+            15.2,
+            53.7,
+            21.3,
+            7.2,
+            1.9,
+            0.6
+          ]
+        },
+        "M": {
+          "YOUNGADULT": [
+            14.1,
+            62.5,
+            19.2,
+            3.3,
+            0.6,
+            0.3
+          ],
+          "ADULT": [
+            8.2,
+            56.3,
+            28.5,
+            5.9,
+            0.9,
+            0.3
+          ],
+          "ELDER": [
+            17.0,
+            58.3,
+            20.3,
+            3.6,
+            0.5,
+            0.3
+          ]
+        },
+        "_source": "[S] NCD-RisC 2026 (2024 estimates), means of 20-29 / 30-59 / 60-84 age bands; classes <18.5 / 18.5-25 / 25-30 / 30-35 / 35-40 / >=40"
+      },
+      "youth": {
+        "CHILD_F": [
+          10.9,
+          4.8,
+          20.9
+        ],
+        "CHILD_M": [
+          14.2,
+          6.1,
+          17.9
+        ],
+        "TEEN_F": [
+          9.7,
+          2.8,
+          18.7
+        ],
+        "TEEN_M": [
+          12.3,
+          3.6,
+          22.4
+        ],
+        "_source": "[S] NCD-RisC 2026 children and adolescents, 2024, means of ages 5-9 (child) and 10-19 (teen): overweight >+1SD, obesity >+2SD, thinness <-2SD"
+      }
     }
   },
   "bmi_classes": {
@@ -1519,9 +1919,10 @@
       "HairTexture_Curly": 30
     },
     "ssa": {
-      "HairTexture_Straight": 3,
+      "HairTexture_Afro": 75,
+      "HairTexture_Curly": 15,
       "HairTexture_Wavy": 7,
-      "HairTexture_Curly": 90
+      "HairTexture_Straight": 3
     },
     "east_asian": {
       "HairTexture_Straight": 90,
@@ -1540,7 +1941,8 @@
     "latin": {
       "HairTexture_Straight": 40,
       "HairTexture_Wavy": 40,
-      "HairTexture_Curly": 20
+      "HairTexture_Curly": 13,
+      "HairTexture_Afro": 7
     },
     "polynesian": {
       "HairTexture_Straight": 45,
@@ -1551,6 +1953,6 @@
       "HairTexture_Straight": 80,
       "HairTexture_Wavy": 20
     },
-    "_status": "[D] no frequency data found; indicative split per group; polynesian [S] Sullivan 1921/1922 (Samoa, Tonga); native_american [D]"
+    "_status": "[D] no frequency data found; indicative split per group; polynesian [S] Sullivan 1921/1922 (Samoa, Tonga); native_american [D]; HairTexture_Afro (afro-textured styles, braids, locs) only drawn for sub-Saharan African and Latin American Sims [D]"
   }
 }

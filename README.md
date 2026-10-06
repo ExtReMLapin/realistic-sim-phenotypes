@@ -72,7 +72,7 @@ changed. Sims that already exist in a save are only changed on request, with `rs
 ## Profiles
 
 `europe` (population-weighted average), `france`, `uk`, `usa`, `germany`, `spain`, `italy`,
-`netherlands`, `sweden`, `poland`.
+`netherlands`, `sweden`, `poland`, `japan`, `china`, `korea` (South Korea), `india`.
 
 Every block of `data/rsim_profiles.json` carries its source and a status. The file is packed inside
 `rsim.ts4script`; to edit a profile, put your own copy of `rsim_profiles.json` next to the mod:
@@ -85,7 +85,9 @@ Main sources: ONS Census 2021, US Census 2020, INSEE 2023 and TeO2, Destatis Mik
 INE, ISTAT, GUS (origins); Sulem et al. 2007, Morgan et al. 2018 (UK Biobank), Ambroa-Conde et al.
 2024, Mengel-From et al. 2009, Lin et al. 2016 (hair and eyes); NCD-RisC 2024 (BMI); Eurostat EHIS
 2019 (strength training); Parzer et al. 2021 (BMI to silhouette); Adhikari et al. 2019 (Latin
-America); Crawford et al. 2017 (Africa).
+America); Crawford et al. 2017 (Africa); for the Asian profiles, Statistics Bureau of Japan and
+Immigration Services Agency, China 2020 census, Korea 2025 register-based census, Census of India
+2011, KNHANES (Sung et al. 2022), Norton 2019 and Jonnalagadda et al. 2019 (skin).
 
 Known gaps: there is no published hair or eye colour frequency table for France, Italy, Sweden or
 Poland, and none at all for the Maghreb; those values are marked [D] or [I].

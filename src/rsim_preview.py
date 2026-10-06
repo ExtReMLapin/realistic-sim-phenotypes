@@ -55,6 +55,9 @@ AGES = {
 MIX = (Age.CHILD, Age.TEEN, Age.YOUNGADULT, Age.YOUNGADULT, Age.ADULT, Age.ADULT, Age.ELDER)
 SUPPORTED_AGES = (Age.CHILD, Age.TEEN, Age.YOUNGADULT, Age.ADULT, Age.ELDER)
 HAIR_LENGTH_TAGS = ('HairLength_Short', 'HairLength_Medium', 'HairLength_Long')
+# Afro-textured styles (afros, braids, locs): a texture tag of their own, only drawn when the Sim's
+# origin group draws that texture.
+HAIR_AFRO = 'HairTexture_Afro'
 PHYSIQUE_HEAVY, PHYSIQUE_FIT, PHYSIQUE_LEAN, PHYSIQUE_BONY = 0, 1, 2, 3
 
 
@@ -87,6 +90,8 @@ class _Data:
     presets = None
     region_keys = {}
     part_genders = None
+    part_tags = {}
+    hair_color_tags = None
 
 
 def _read_config():
@@ -186,11 +191,13 @@ def _catalog(sim_info, body_type):
         other_gender = 0
         for part_id, value in parts.items():
             part_id = int(part_id)
+            tags = set(int(t) for t in (value[0] if isinstance(value, tuple) else value))
+            # Tags of every part, to read the part a Sim already wears even when it would not be drawn.
+            _Data.part_tags[part_id] = tags
             if official_only and not _is_official_part(part_id):
                 continue
             # The catalogue also lists parts designed for the other gender, which CAS only shows once
             # its gender filter is off (e.g. long feminine hairstyles on men).
-            tags = set(int(t) for t in (value[0] if isinstance(value, tuple) else value))
             if not _fits_gender(sim_info, part_id, tags):
                 other_gender += 1
                 continue
@@ -214,19 +221,24 @@ def _current_part(sim_info, body_type):
 
 
 def _pick_part(sim_info, body_type, wanted_tag_names, keep_tag_names, rng, required_tag_name=None,
-               only_if_tagged=None):
+               only_if_tagged=None, preferred_tag=None, excluded_tag_names=(), shade_tags=None):
     """Pick a part carrying one of the wanted tags.
 
     keep_tag_names: tags kept from the current part when possible (e.g. hair length).
     required_tag_name: tag required when possible (e.g. hair texture), dropped if it leaves no candidate.
     only_if_tagged: do nothing unless the current part carries one of these tags (e.g. no beard).
+    preferred_tag: tag value kept when possible (e.g. the Sim's archetype on hairstyles).
+    excluded_tag_names: parts carrying one of these tags are left out when possible.
+    shade_tags: exact colour tags to match when possible (a beard in the very shade of the hair).
     """
     wanted = set(t for t in (_tag(n) for n in wanted_tag_names) if t is not None)
     if not wanted:
         return None
     catalog = _catalog(sim_info, body_type)
     current = _current_part(sim_info, body_type)
-    current_tags = catalog.get(int(current), set()) if current is not None else set()
+    # The current part may be missing from the filtered catalogue (made for the other gender): read
+    # its tags from the full one, so a beard or eyebrows from the game's pick still get recoloured.
+    current_tags = _Data.part_tags.get(int(current), set()) if current is not None else set()
     if only_if_tagged is not None:
         gate = set(t for t in (_tag(n) for n in only_if_tagged) if t is not None)
         if not (current_tags & gate):
@@ -234,9 +246,19 @@ def _pick_part(sim_info, body_type, wanted_tag_names, keep_tag_names, rng, requi
     candidates = [p for p, tags in catalog.items() if tags & wanted]
     if not candidates:
         return None
+    excluded = set(t for t in (_tag(n) for n in excluded_tag_names) if t is not None)
+    if excluded:
+        kept = [p for p in candidates if not catalog[p] & excluded]
+        if kept:
+            candidates = kept
     required = _tag(required_tag_name) if required_tag_name else None
-    if required is not None:
-        narrowed = [p for p in candidates if required in catalog[p]]
+    for tag in (preferred_tag, required):
+        if tag is not None:
+            narrowed = [p for p in candidates if tag in catalog[p]]
+            if narrowed:
+                candidates = narrowed
+    if shade_tags:
+        narrowed = [p for p in candidates if catalog[p] & shade_tags]
         if narrowed:
             candidates = narrowed
     if keep_tag_names:
@@ -299,6 +321,44 @@ def _edit_genetics(sim_info, edit, what):
         _log('genetics not updated ({}): {!r}'.format(what, exc))
 
 
+GREY_HAIR_TAGS = ('HairColor_Gray', 'HairColor_GrayWarm', 'HairColor_DarkGray', 'HairColor_DarkGrayCool',
+                  'HairColor_DarkGrayWarm', 'HairColor_LightGrayCool', 'HairColor_LightGrayWarm', 'HairColor_White',
+                  'HairColor_BlackSaltAndPepper', 'HairColor_BrownSaltAndPepper')
+
+
+def _grey_hair(sim_info, all_hair_colors):
+    """Grey tag names of an elder's hair when the game made it grey or white only, else None.
+
+    Such elders keep the shade; elders the game gave a colour (or grey mixed with a fantasy colour)
+    get one from their origin instead.
+    """
+    if sim_info.age != Age.ELDER:
+        return None
+    _catalog(sim_info, BodyType.HAIR)  # fills the tags of every hair part
+    current = _current_part(sim_info, BodyType.HAIR)
+    if current is None:
+        return None
+    tags = _Data.part_tags.get(int(current), set())
+    colours = {n for n in all_hair_colors if _tag(n) in tags}
+    if not colours or not colours <= set(GREY_HAIR_TAGS):
+        return None
+    return sorted(colours)
+
+
+def _hair_color_tag_names(engine):
+    """Every HairColor_* tag of the game (platinum, grey, white, fantasy colours...), not only the five
+    natural colours the profiles draw: a beard or eyebrows in any of them get the hair colour."""
+    if _Data.hair_color_tags is None:
+        names = []
+        try:
+            names = [t.name for t in Tag if t.name.startswith('HairColor_')]
+        except Exception:
+            _log('hair colour tags not listed:\n' + traceback.format_exc())
+        profile_names = [t for tags in engine.data['hair_tags'].values() if isinstance(tags, list) for t in tags]
+        _Data.hair_color_tags = sorted(set(names) | set(profile_names))
+    return _Data.hair_color_tags
+
+
 def _usable_tones(engine):
     official_only = engine.settings.get('official_only', True)
     excluded = set(engine.settings.get('excluded_tones', ()))
@@ -321,26 +381,36 @@ def apply_look(sim_info, look, rng, skin_mu=None):
     sim_info.skin_tone = engine.pick_tone(tones, mu, look['skin_sd'], rng, archetype=look.get('archetype'))
     sim_info.skin_tone_val_shift = float(engine.settings.get('skin_val_shift', 0.0))
     _set_physique(sim_info, look)
-    if sim_info.age != Age.ELDER:
-        hair_tags = engine.data['hair_tags'][look['hair']]
-        all_hair_colors = [t for tags in engine.data['hair_tags'].values() if isinstance(tags, list) for t in tags]
-        hair = _pick_part(sim_info, BodyType.HAIR, hair_tags, HAIR_LENGTH_TAGS, rng,
-                          required_tag_name=look.get('hair_texture'))
-        if hair is not None:
-            _replace_part_everywhere(sim_info, BodyType.HAIR, hair)
-        look['hair_part'] = hair
-        # Beard and eyebrows get the hair colour, only when the Sim already has a coloured one.
-        for body_type in (BodyType.FACIAL_HAIR, BodyType.EYEBROWS):
-            part = _pick_part(sim_info, body_type, hair_tags, (), rng, only_if_tagged=all_hair_colors)
-            if part is not None:
-                _replace_part_everywhere(sim_info, body_type, part)
+    hair_tags = engine.data['hair_tags'][look['hair']]
+    all_hair_colors = _hair_color_tag_names(engine)
+    grey = _grey_hair(sim_info, all_hair_colors)
+    if grey:
+        # An elder the game gave grey or white hair keeps that shade, in a style fitting their origin.
+        hair_tags = grey
+    # EA tags hairstyles with the archetypes they suit (afro-textured styles: African and Latin).
+    hair = _pick_part(sim_info, BodyType.HAIR, hair_tags, HAIR_LENGTH_TAGS, rng,
+                      required_tag_name=look.get('hair_texture'),
+                      preferred_tag=None if grey else ARCHETYPE_TAGS.get(look.get('archetype')),
+                      excluded_tag_names=() if look.get('hair_texture') == HAIR_AFRO else (HAIR_AFRO,))
+    if hair is not None:
+        _replace_part_everywhere(sim_info, BodyType.HAIR, hair)
+    look['hair_part'] = hair
+    # Beard and eyebrows get the hair colour, only when the Sim already has a coloured one: the
+    # hairstyle's exact shade when it exists for them (a colour category spans several EA shades).
+    colour_tags = set(t for t in (_tag(n) for n in all_hair_colors) if t is not None)
+    shade = (_Data.part_tags.get(int(hair), set()) & colour_tags) if hair is not None else None
+    for body_type in (BodyType.FACIAL_HAIR, BodyType.EYEBROWS):
+        part = _pick_part(sim_info, body_type, hair_tags, (), rng, only_if_tagged=all_hair_colors,
+                          shade_tags=shade)
+        if part is not None:
+            _replace_part_everywhere(sim_info, body_type, part)
     eyes = _pick_part(sim_info, BodyType.EYECOLOR, engine.data['eye_tags'][look['eyes']], (), rng)
     if eyes is not None:
         _replace_part_everywhere(sim_info, BodyType.EYECOLOR, eyes)
     look['eye_part'] = eyes
     if engine.settings.get('face_presets', True) and look.get('archetype'):
         try:
-            look['presets'] = apply_archetype_face(sim_info, look['archetype'], rng)
+            look['presets'] = apply_archetype_face(sim_info, look['archetype'], rng, exclude=look.get('face_exclude'))
         except Exception:
             _log('face preset error on {}:\n{}'.format(sim_info.id, traceback.format_exc()))
     return look
@@ -382,6 +452,9 @@ ARCHETYPE_ORIGINS = {
     'native_american': 'native_american',
 }
 FACE_REGIONS = ('eyes', 'nose', 'mouth')
+# Tag values of EA's Archetype_* tags (category 69), see tools/build_presets.py.
+ARCHETYPE_TAGS = {'african': 73, 'middle_eastern': 74, 'asian': 75, 'caucasian': 76, 'south_asian': 88,
+                  'north_american': 89, 'latin': 312, 'island': 2206, 'native_american': 2996}
 MAX_DISCRIMINATING_ARCHETYPES = 3
 
 
@@ -402,7 +475,7 @@ def _load_presets():
     return _Data.presets
 
 
-def _face_presets(sim_info, archetype, region, strict):
+def _face_presets(sim_info, archetype, region, strict, exclude=None):
     """Presets of a region that fit the Sim's age and gender and carry the archetype tag.
 
     strict: only presets reserved to a few archetypes (most presets carry all of them and say nothing).
@@ -412,6 +485,7 @@ def _face_presets(sim_info, archetype, region, strict):
     return [p for p in _load_presets()
             if p['region'] == region and p['human_form'] and archetype in p['archetypes']
             and p['age_gender'] & wanted == wanted and p['frame'] & frame
+            and not _excluded(p, (exclude or {}).get(region, ()))
             and (not strict or len(p['archetypes']) <= MAX_DISCRIMINATING_ARCHETYPES)]
 
 
@@ -430,6 +504,13 @@ def _frame(sim_info):
             if 'masc' in name:
                 return 0x1000
     return 0x2000 if sim_info.gender == Gender.FEMALE else 0x1000
+
+
+def _excluded(preset, archetypes):
+    """A preset reserved to a few archetypes, one of which the origin group excludes for this region
+    (e.g. presets EA tagged both Asian and SouthAsian, kept away from South Asian eyes)."""
+    tags = preset['archetypes']
+    return len(tags) <= MAX_DISCRIMINATING_ARCHETYPES and any(a in tags for a in archetypes)
 
 
 def _apply_face_preset(sim_info, preset):
@@ -463,7 +544,7 @@ def _edit_face_blob(current, preset):
     return face.SerializeToString()
 
 
-def apply_archetype_face(sim_info, archetype, rng, regions=FACE_REGIONS, strict=False):
+def apply_archetype_face(sim_info, archetype, rng, regions=FACE_REGIONS, strict=False, exclude=None):
     """Eyes, nose and mouth drawn among EA's presets tagged for the archetype.
 
     Not strict: presets shared by several archetypes stay in the pool, so a group keeps its variety
@@ -471,7 +552,7 @@ def apply_archetype_face(sim_info, archetype, rng, regions=FACE_REGIONS, strict=
     """
     used = []
     for region in regions:
-        candidates = _face_presets(sim_info, archetype, region, strict)
+        candidates = _face_presets(sim_info, archetype, region, strict, exclude)
         if not candidates:
             used.append('{}:none'.format(region))
             continue
@@ -491,7 +572,8 @@ def apply_face(sim_info, face, rng):
     look['archetype'] = face['archetype']
     apply_look(sim_info, look, rng)
     # The command forces the tested regions, by default with presets reserved to this archetype.
-    look['presets'] = apply_archetype_face(sim_info, face['archetype'], rng, face['regions'], face['strict'])
+    look['presets'] = apply_archetype_face(sim_info, face['archetype'], rng, face['regions'], face['strict'],
+                                           look.get('face_exclude'))
     return look
 
 
